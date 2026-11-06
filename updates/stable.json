@@ -1,7 +1,7 @@
 {
-    "version":  "5.9.0",
+    "version":  "6.0.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.9.0.zip",
-    "sha256":  "c9a657d2c980fd6ce4fe54c5a1604f38d95cc630f00fc78595ff8822ab338282",
-    "notes":  "Fix System.Management compilation error in the existing T-Net updater; retain speed correction, monitoring status indicator, and usage history."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.0.0.zip",
+    "sha256":  "7aaa947e47aaeb44e950c33d38dee9dfd5c51a89bacc58e19071f3fbe3f83d38",
+    "notes":  "Fix automatic monitoring engine startup and recovery. Attach to an existing healthy engine without disrupting it; retain current speed, status indicator and saved usage history."
 }
