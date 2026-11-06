@@ -16,15 +16,12 @@ once('''    bool checkingUpdates = false;''',
     readonly object liveCounterLock=new object();
     System.Threading.Timer liveCounterTimer;
     PerformanceCounter nativeRxCounter, nativeTxCounter;
-    string nativeCounterInstance="";
     string nativeCounterAdapter="";
     DateTime lastNativeSampleUtc=DateTime.MinValue;
     double nativeRxBytesPerSecond=0, nativeTxBytesPerSecond=0;
     long nativeSampleId=0;
     bool nativeCounterAvailable=false;
-    int nativeCounterErrors=0;
     DateTime nativeRetryUtc=DateTime.MinValue;
-    long lastDisplayedNativeSampleId=-1;
     bool checkingUpdates = false;''')
 once('''      indicatorTimer.Tick+=(s,e)=>PulseIndicator();indicatorTimer.Start();''',
 '''      indicatorTimer.Tick+=(s,e)=>PulseIndicator();indicatorTimer.Start();
@@ -89,10 +86,8 @@ native=r'''    // PerformanceCounter uses Windows Performance Monitor's per-inte
           nativeTxCounter=new PerformanceCounter("Network Interface","Bytes Sent/sec",instance,true);
           // The first NextValue() only primes a rate counter; never use it.
           nativeRxCounter.NextValue();nativeTxCounter.NextValue();
-          nativeCounterInstance=instance;
           nativeCounterAdapter=adapterName;
           nativeCounterAvailable=true;
-          nativeCounterErrors=0;
           lastNativeSampleUtc=DateTime.MinValue;
           return;
         }
@@ -104,9 +99,7 @@ native=r'''    // PerformanceCounter uses Windows Performance Monitor's per-inte
         nativeRxBytesPerSecond=rx;nativeTxBytesPerSecond=tx;
         lastNativeSampleUtc=DateTime.UtcNow;
         nativeSampleId++;
-        nativeCounterErrors=0;
       }catch{
-        nativeCounterErrors++;
         // Missing/disabled/localized performance counters are optional:
         // keep direct PowerShell rates and never interfere with usage.json.
         DisposeNativeCounters();
