@@ -1,7 +1,7 @@
 {
-    "version":  "6.3.0",
+    "version":  "6.4.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.3.0.zip",
-    "sha256":  "e0303bc44ae779efeb00a0614e8938d8591e84ae5db2e3eb8291f6c1055dcd0f",
-    "notes":  "Make live readings more responsive: nonblocking 500ms dashboard polling, no overlapping requests, faster cached metadata and lighter chart redraws. Retains direct adapter sampling and existing usage history."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.4.0.zip",
+    "sha256":  "6dd9bd28fb81a6ef367abaedc7c46653ac17d6b289bcaa17c0fa6166c964fbb2",
+    "notes":  "Displays the real age of the most recent adapter measurement in the Network panel and flags stale readings after 3 seconds. Speed calculations, startup and saved usage unchanged."
 }
