@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare and test release
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference='Stop'
           Invoke-WebRequest 'https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/release-candidate/AirtelMonitor-5.1.0.zip' -OutFile baseline.zip
