@@ -1,0 +1,27 @@
+name: Snapshot T-Net v6.6 released source
+on:
+  push:
+    paths:
+      - '.github/workflows/snapshot-v66.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  snapshot:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save released source for precise live-speed changes
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $folder='diagnostics/released-v66'
+          New-Item -ItemType Directory $folder -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.6.0.zip $folder -Force
+          $source=[IO.File]::ReadAllText("$folder/AirtelMonitorNative.cs")
+          if(!$source.Contains('const string AppVersion = "6.6.0";')){throw 'Unexpected version'}
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $folder
+          git commit -m 'Capture released v6.6 source before Task Manager-style speed update'
+          git push
