@@ -1,0 +1,27 @@
+name: Prepare T-Net v6.2 source for responsiveness review
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-v62.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  export:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Save exact released source for review
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $folder='diagnostics/released-v62'
+          New-Item -ItemType Directory $folder -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.2.0.zip $folder -Force
+          $source=Get-Content "$folder/AirtelMonitorNative.cs" -Raw
+          if(!$source.Contains('const string AppVersion = "6.2.0";')){throw 'Unexpected version'}
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $folder
+          git commit -m 'Snapshot exact T-Net 6.2 sources for responsiveness audit'
+          git push
