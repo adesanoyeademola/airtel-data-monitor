@@ -1,0 +1,62 @@
+name: Publish T-Net v6.8 speed source diagnostic
+on:
+  push:
+    paths:
+      - '.github/workflows/v68.yml'
+      - 'release-candidate/patch_v68.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile source indication without changing speed computations
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.7.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $engineBefore=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v68.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineBefore){throw 'Monitoring engine changed'}
+          @'
+          from pathlib import Path
+          old=Path('work/BaselineNative.cs').read_text(encoding='utf-8')
+          new=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8')
+          new=new.replace('const string AppVersion = "6.8.0";','const string AppVersion = "6.7.0";')
+          new=new.replace('sampleAgeLabel, speedSourceLabel, wifi','sampleAgeLabel, wifi')
+          a=new.index('      speedSourceLabel=new Label{')
+          b=new.index('      detailScroll.Controls.Add(LabelText("Adapter"));',a)
+          new=new[:a]+new[b:]
+          a=new.index('        if(speedSourceLabel!=null){')
+          b=new.index('        bool liveFresh=useNative || fresh;',a)
+          new=new[:a]+new[b:]
+          assert new==old, 'Unintended change to calculations or UI'
+          print('Source changes verified: only source label and version')
+          '@ | Set-Content work/check_source.py -Encoding UTF8
+          python work/check_source.py
+          if($LASTEXITCODE -ne 0){throw 'Source change verification failed'}
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){throw 'PowerShell engine syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $output='releases/AirtelMonitor-6.8.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.8.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.8.0.zip'
+            sha256=$sha
+            notes='Shows the current live speed source (Windows performance counters or adapter fallback) under Network. Live speed calculations, Wi-Fi detection and stored data remain unchanged.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish T-Net v6.8 live speed source diagnostic'
+          git push
