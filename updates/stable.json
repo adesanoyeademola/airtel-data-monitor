@@ -1,5 +1,7 @@
-{
-  "version": "5.0.0",
-  "status": "no-release",
-  "message": "No newer tested update has been published."
+﻿{
+    "version":  "5.1.0",
+    "status":  "available",
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/release-candidate/AirtelMonitor-5.1.0.zip",
+    "sha256":  "ed6ced6479b8eba247b2f772fc4cdd981287981604a6aa36921f2203c93dd869",
+    "notes":  "Improve live transfer rates, sample freshness and header readability."
 }
