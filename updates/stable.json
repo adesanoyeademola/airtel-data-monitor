@@ -1,7 +1,7 @@
 {
-    "version":  "6.6.0",
+    "version":  "6.7.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.6.0.zip",
-    "sha256":  "7fe020178f0909d62454664f0b9fccbcce41d11fbb5b4087f2fbd35e7ae35d13",
-    "notes":  "Fix displayed GLOBAL hotspot label for alternate Windows character encodings. No changes to live speed, adapter measurements, charts, startup, or usage records."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.7.0.zip",
+    "sha256":  "724d7902898bddf682f074cab9a64b08d746834ce8918912da4a401e02a96b5a",
+    "notes":  "Uses Windows Network Interface performance counters for live upload/download speeds when available; falls back to T-Net adapter counters. Speed cards and live chart share source. Saved usage history and Wi-Fi label unchanged."
 }
