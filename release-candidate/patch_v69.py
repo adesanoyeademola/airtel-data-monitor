@@ -156,9 +156,10 @@ methods=r'''    void SetGraphView(int view){
       bool baseline=parts[6]=="baseline";
       string period=baseline?"Start":
         Math.Max(0,(int)(end-start).TotalSeconds).ToString(CultureInfo.InvariantCulture)+"s";
-      int index=usageGrid.Rows.Insert(0,
+      usageGrid.Rows.Insert(0,
         end.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss",CultureInfo.InvariantCulture),
         period,Bytes(received),Bytes(sent),Bytes(used),Bytes(running));
+      int index=0;
       usageGrid.Rows[index].Cells[0].ToolTipText=
         (baseline?"Starting checkpoint; no interval usage":
           "Measured interval: "+start.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")+
