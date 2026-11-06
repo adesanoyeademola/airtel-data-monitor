@@ -1,7 +1,7 @@
 {
-    "version":  "5.5.0",
+    "version":  "5.6.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.5.0.zip",
-    "sha256":  "7444167bac88b56e522ccdcea873969ad67fc273b93356d1127e948079479e14",
-    "notes":  "Task Manager-aligned Kbps/Mbps live speeds and warning when an old monitoring service is still running."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.6.0.zip",
+    "sha256":  "7e28083faef13999dcdf17ba67539989b5a0768e4905260dafd2971e6d5b3826",
+    "notes":  "Rename the desktop interface, window, tray label and existing shortcut to T-Net while keeping monitoring data."
 }
