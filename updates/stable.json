@@ -1,7 +1,7 @@
 {
-    "version":  "5.6.0",
+    "version":  "5.7.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.6.0.zip",
-    "sha256":  "7e28083faef13999dcdf17ba67539989b5a0768e4905260dafd2971e6d5b3826",
-    "notes":  "Rename the desktop interface, window, tray label and existing shortcut to T-Net while keeping monitoring data."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.7.0.zip",
+    "sha256":  "64f3b4d1256341260f4ec09f9d9044b255c24d3f650346d1c5f67fb7d8b8c16a",
+    "notes":  "Detect and safely stop stale T-Net PowerShell monitoring processes on startup, plus a tray service restart action, while retaining saved usage records."
 }
