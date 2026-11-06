@@ -1,0 +1,80 @@
+name: Publish T-Net Windows v6.5 hotspot-label correction
+on:
+  push:
+    paths:
+      - '.github/workflows/v65.yml'
+      - 'release-candidate/patch_v65.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate SSID display-only patch and publish existing updater package
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.4.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $originalEngineHash=(Get-FileHash 'work/monitor.ps1' -Algorithm SHA256).Hash
+          python release-candidate/patch_v65.py
+          if($LASTEXITCODE -ne 0){ throw 'SSID patch failed' }
+          $newEngineHash=(Get-FileHash 'work/monitor.ps1' -Algorithm SHA256).Hash
+          if($originalEngineHash -ne $newEngineHash){ throw 'Monitoring engine changed unexpectedly' }
+          @'
+          from pathlib import Path
+          base=Path('work/BaselineNative.cs').read_text(encoding='utf-8')
+          updated=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8')
+          updated=updated.replace('const string AppVersion = "6.5.0";','const string AppVersion = "6.4.0";')
+          updated=updated.replace('wifi.Text=HotspotLabel(currentSsid);','wifi.Text=(currentSsid.Length>0?currentSsid:"Not connected");')
+          start=updated.index('    // Display ONLY. The raw SSID is left untouched')
+          end=updated.index('    void ApplyUsage(Dictionary<string,object> d){',start)
+          updated=updated[:start]+updated[end:]
+          if updated != base: raise SystemExit('A non-display source change detected')
+          print('Verified only version, hotspot display expression, and display helper changed')
+          '@ | Set-Content -Path work/check_display_only.py -Encoding UTF8
+          python work/check_display_only.py
+          if($LASTEXITCODE -ne 0){ throw 'Source equivalence verification failed' }
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){ throw ('Monitoring engine syntax invalid: '+($errors | Out-String)) }
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $asm=[System.Reflection.Assembly]::LoadFile((Resolve-Path 'test.exe').Path)
+          $klass=$asm.GetType('AirtelMonitorNative.MainForm',$true)
+          $flags=[System.Reflection.BindingFlags]::Static -bor [System.Reflection.BindingFlags]::NonPublic
+          $method=$klass.GetMethod('HotspotLabel',$flags)
+          if($null -eq $method){throw 'Missing hotspot-label method'}
+          $broken='GLOBAL' + [char]0x00F0 + [char]0x0178 + [char]0x00A4 + '-'
+          $emoji=[char]::ConvertFromUtf32(0x1F60A)
+          $pairs=@(
+            @($broken,'GLOBAL'),
+            @(('GLOBAL'+$emoji),('GLOBAL'+$emoji)),
+            @('GLOBAL-NET','GLOBAL-NET'),
+            @('Café','Café'),
+            @('','Not connected')
+          )
+          foreach($pair in $pairs){
+            $actual=[string]$method.Invoke($null,@([string]$pair[0]))
+            if($actual -cne [string]$pair[1]){
+              throw ('SSID display test failed: '+$actual+' instead of '+$pair[1])
+            }
+          }
+          $output='releases/AirtelMonitor-6.5.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.5.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.5.0.zip'
+            sha256=$sha
+            notes='Display-only hotspot name repair: hide corrupted trailing characters in Wi-Fi SSID. Speeds, charts, auto-start, connection monitoring and usage history are unchanged.'
+          }
+          [System.IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish validated T-Net v6.5 Wi-Fi display-only repair'
+          git push
