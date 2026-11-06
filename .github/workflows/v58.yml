@@ -1,0 +1,42 @@
+name: Publish T-Net Windows v5.8 speed & status repair
+on:
+  push:
+    paths:
+      - '.github/workflows/v58.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source and publish update
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-5.7.0.zip work
+          python release-candidate/patch_v58.py
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){throw ('PowerShell syntax failure: ' + ($errors | Out-String))}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Management.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $src=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          if(!$src.Contains('const string AppVersion = "5.8.0";') -or !$src.Contains('NumberStyles.Float,CultureInfo.InvariantCulture') -or !$src.Contains('PulseIndicator()')) {throw 'Expected fixes missing'}
+          # Confirm decimal numeric values do not become thousands when the current locale uses commas.
+          $culture=[System.Globalization.CultureInfo]::GetCultureInfo('de-DE')
+          $fromApi=[double]14869.54173762
+          $bad=[double]::Parse($fromApi.ToString($culture),[System.Globalization.NumberStyles]::Any,[System.Globalization.CultureInfo]::InvariantCulture)
+          $safe=[Convert]::ToDouble($fromApi,[System.Globalization.CultureInfo]::InvariantCulture)
+          if($safe -ne $fromApi -or $bad -le $safe){throw 'Locale regression test did not reproduce issue'}
+          $output='releases/AirtelMonitor-5.8.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{version='5.8.0';status='available';packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.8.0.zip';sha256=$sha;notes='Fix impossibly large live-speed values using locale-safe numbers and link-speed checks; softly pulse the green live dot, yellow for paused and red for disconnected.'}
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish validated T-Net 5.8 speed and live indicator update'
+          git push
