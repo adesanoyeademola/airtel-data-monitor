@@ -50,18 +50,16 @@ jobs:
           if($null -eq $method){throw 'Missing hotspot display formatter'}
           $mojibake = 'GLOBAL'+[char]0x00F0+[char]0x0178+[char]0x00A4+'-'
           $emoji = [char]::ConvertFromUtf32(0x1F60A)
-          $testCases=@(
-            @($mojibake,'GLOBAL'),
-            @('GLOBAL'+[char]0x00F0+'?', 'GLOBAL'),
-            @('GLOBAL'+$emoji, 'GLOBAL'+$emoji),
-            @('GLOBAL-NET','GLOBAL-NET'),
-            @('Café','Café'),
-            @('','Not connected')
-          )
-          foreach($pair in $testCases){
-            $actual=[string]$method.Invoke($null,@([string]$pair[0]))
-            if($actual -cne [string]$pair[1]){throw "Wi-Fi name test failed: $actual expected $($pair[1])"}
+          function Assert-SSID([string]$inputName,[string]$expectedName){
+            $actual=[string]$method.Invoke($null,[object[]]@($inputName))
+            if($actual -cne $expectedName){throw ("SSID test failed: ["+$actual+"] expected ["+$expectedName+"]")}
           }
+          Assert-SSID $mojibake 'GLOBAL'
+          Assert-SSID ('GLOBAL'+[char]0x00F0+'?') 'GLOBAL'
+          Assert-SSID ('GLOBAL'+$emoji) ('GLOBAL'+$emoji)
+          Assert-SSID 'GLOBAL-NET' 'GLOBAL-NET'
+          Assert-SSID 'Café' 'Café'
+          Assert-SSID '' 'Not connected'
           $output='releases/AirtelMonitor-6.6.0.zip'
           Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
           $digest=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
