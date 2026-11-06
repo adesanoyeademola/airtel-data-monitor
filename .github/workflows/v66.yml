@@ -58,7 +58,7 @@ jobs:
           Assert-SSID ('GLOBAL'+[char]0x00F0+'?') 'GLOBAL'
           Assert-SSID ('GLOBAL'+$emoji) ('GLOBAL'+$emoji)
           Assert-SSID 'GLOBAL-NET' 'GLOBAL-NET'
-          Assert-SSID 'Café' 'Café'
+          Assert-SSID ('Caf'+[char]0x00E9) ('Caf'+[char]0x00E9)
           Assert-SSID '' 'Not connected'
           $output='releases/AirtelMonitor-6.6.0.zip'
           Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
