@@ -1,7 +1,7 @@
 {
-    "version":  "6.4.0",
+    "version":  "6.5.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.4.0.zip",
-    "sha256":  "6dd9bd28fb81a6ef367abaedc7c46653ac17d6b289bcaa17c0fa6166c964fbb2",
-    "notes":  "Displays the real age of the most recent adapter measurement in the Network panel and flags stale readings after 3 seconds. Speed calculations, startup and saved usage unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.5.0.zip",
+    "sha256":  "67a7e80be592a7d648683db77851dd15ad89d55360c5132b223be8d8926d9ba6",
+    "notes":  "Display-only hotspot name repair: hide corrupted trailing characters in Wi-Fi SSID. Speeds, charts, auto-start, connection monitoring and usage history are unchanged."
 }
