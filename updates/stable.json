@@ -1,7 +1,7 @@
 {
-    "version":  "5.2.0",
+    "version":  "5.3.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.2.0.zip",
-    "sha256":  "f5a774038c17bb50c36791fde416fcbd6af232da3fdc97668a4bfdcfc14735e6",
-    "notes":  "Live Wi-Fi name, clean Daily usage heading, bold title."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.3.0.zip",
+    "sha256":  "bc67311abbd6294e85921a1b018d83e5e36d7b29274fd4f916de547dfc41e128",
+    "notes":  "Restore scrollable Network details and improve measured live download/upload speeds."
 }
