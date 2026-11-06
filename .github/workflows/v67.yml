@@ -1,0 +1,50 @@
+name: Publish T-Net v6.7 Windows speed counter comparison
+on:
+  push:
+    paths:
+      - '.github/workflows/v67.yml'
+      - 'release-candidate/patch_v67.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Windows performance counter live readings and preserved usage engine
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.6.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $engineHashBefore=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v67.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+          $engineHashAfter=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          if($engineHashBefore -ne $engineHashAfter){throw 'PowerShell traffic/history engine unexpectedly changed'}
+          $source=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          foreach($expected in @('const string AppVersion = "6.7.0";','Bytes Received/sec','Bytes Sent/sec','TryNativeRates(','PerformanceCounter','CaptureLiveSpeedSample(stat,liveSampleId','wifi.Text=HotspotLabel(currentSsid);')){
+            if(!$source.Contains($expected)){throw "Expected feature missing: $expected"}
+          }
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count -gt 0){throw 'Monitoring engine syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $out='releases/AirtelMonitor-6.7.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $out
+          $sha=(Get-FileHash $out -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.7.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.7.0.zip'
+            sha256=$sha
+            notes='Uses Windows Network Interface performance counters for live upload/download speeds when available; falls back to T-Net adapter counters. Speed cards and live chart share source. Saved usage history and Wi-Fi label unchanged.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $out updates/stable.json
+          git commit -m 'Publish tested T-Net v6.7 Windows-style network live rate counters'
+          git push
