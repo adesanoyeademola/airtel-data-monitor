@@ -1,7 +1,7 @@
 {
-    "version":  "5.7.0",
+    "version":  "5.8.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.7.0.zip",
-    "sha256":  "64f3b4d1256341260f4ec09f9d9044b255c24d3f650346d1c5f67fb7d8b8c16a",
-    "notes":  "Detect and safely stop stale T-Net PowerShell monitoring processes on startup, plus a tray service restart action, while retaining saved usage records."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.8.0.zip",
+    "sha256":  "de5d9b9549bd02316cd25351116512dea103daeffad13a01a65f709340c4d92d",
+    "notes":  "Fix impossibly large live-speed values using locale-safe numbers and link-speed checks; softly pulse the green live dot, yellow for paused and red for disconnected."
 }
