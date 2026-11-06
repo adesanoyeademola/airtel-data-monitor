@@ -1,0 +1,80 @@
+name: Publish T-Net Windows v6.6 Wi-Fi label display-only repair
+on:
+  push:
+    paths:
+      - '.github/workflows/v66.yml'
+      - 'release-candidate/patch_v66.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm display-only source change, compile and publish
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.5.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $engineBefore=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v66.py
+          if($LASTEXITCODE -ne 0){throw 'SSID patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineBefore){throw 'Monitoring engine was modified'}
+          @'
+          from pathlib import Path
+          original=Path("work/BaselineNative.cs").read_text(encoding="utf-8")
+          modified=Path("work/AirtelMonitorNative.cs").read_text(encoding="utf-8")
+          modified=modified.replace('const string AppVersion = "6.6.0";','const string AppVersion = "6.5.0";')
+          before=original.index('    // Display ONLY. The raw SSID is left untouched')
+          after=original.index('    void ApplyUsage(Dictionary<string,object> d){',before)
+          replacement=original[before:after]
+          start=modified.index('    // DISPLAY ONLY: never modify currentSsid')
+          end=modified.index('    void ApplyUsage(Dictionary<string,object> d){',start)
+          modified=modified[:start]+replacement+modified[end:]
+          assert modified==original, "Non-display change detected"
+          print("Only hotspot display helper and version changed")
+          '@ | Set-Content work/verify_source.py -Encoding UTF8
+          python work/verify_source.py
+          if($LASTEXITCODE -ne 0){throw 'Source equivalence check failed'}
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$parseErrors) | Out-Null
+          if($parseErrors.Count -gt 0){throw 'Monitoring PowerShell syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $assembly=[Reflection.Assembly]::LoadFile((Resolve-Path test.exe).Path)
+          $klass=$assembly.GetType('AirtelMonitorNative.MainForm',$true)
+          $flags=[Reflection.BindingFlags]::Static -bor [Reflection.BindingFlags]::NonPublic
+          $method=$klass.GetMethod('HotspotLabel',$flags)
+          if($null -eq $method){throw 'Missing hotspot display formatter'}
+          $mojibake = 'GLOBAL'+[char]0x00F0+[char]0x0178+[char]0x00A4+'-'
+          $emoji = [char]::ConvertFromUtf32(0x1F60A)
+          $testCases=@(
+            @($mojibake,'GLOBAL'),
+            @('GLOBAL'+[char]0x00F0+'?', 'GLOBAL'),
+            @('GLOBAL'+$emoji, 'GLOBAL'+$emoji),
+            @('GLOBAL-NET','GLOBAL-NET'),
+            @('Café','Café'),
+            @('','Not connected')
+          )
+          foreach($pair in $testCases){
+            $actual=[string]$method.Invoke($null,@([string]$pair[0]))
+            if($actual -cne [string]$pair[1]){throw "Wi-Fi name test failed: $actual expected $($pair[1])"}
+          }
+          $output='releases/AirtelMonitor-6.6.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $digest=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.6.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.6.0.zip'
+            sha256=$digest
+            notes='Fix displayed GLOBAL hotspot label for alternate Windows character encodings. No changes to live speed, adapter measurements, charts, startup, or usage records.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish T-Net v6.6 display-only Wi-Fi name fix'
+          git push
