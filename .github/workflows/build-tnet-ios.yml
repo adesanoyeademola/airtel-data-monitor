@@ -9,7 +9,7 @@ permissions:
   contents: write
 jobs:
   ipa:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
