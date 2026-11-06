@@ -1,7 +1,7 @@
 {
-    "version":  "6.5.0",
+    "version":  "6.6.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.5.0.zip",
-    "sha256":  "67a7e80be592a7d648683db77851dd15ad89d55360c5132b223be8d8926d9ba6",
-    "notes":  "Display-only hotspot name repair: hide corrupted trailing characters in Wi-Fi SSID. Speeds, charts, auto-start, connection monitoring and usage history are unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.6.0.zip",
+    "sha256":  "7fe020178f0909d62454664f0b9fccbcce41d11fbb5b4087f2fbd35e7ae35d13",
+    "notes":  "Fix displayed GLOBAL hotspot label for alternate Windows character encodings. No changes to live speed, adapter measurements, charts, startup, or usage records."
 }
