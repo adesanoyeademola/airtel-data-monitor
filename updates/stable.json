@@ -1,7 +1,7 @@
 {
-    "version":  "6.8.0",
+    "version":  "6.9.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.8.0.zip",
-    "sha256":  "8955e81806741c47dd7456c4e9a0594baa2e5023f8a4e001bc4759832ab3e570",
-    "notes":  "Shows the current live speed source (Windows performance counters or adapter fallback) under Network. Live speed calculations, Wi-Fi detection and stored data remain unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.9.0.zip",
+    "sha256":  "01c9a2a7171503f170d9f79ad6a3a9dcaa93fda388baf7e5a9a83497042f14f5",
+    "notes":  "Moves live-speed source text slightly above Adapter and adds timestamped, locally saved minute-scale Wi-Fi usage checkpoints with download, upload, and running daily totals in an optional Usage log view and CSV. Live speed calculations, monitoring engine and existing usage.json unchanged."
 }
