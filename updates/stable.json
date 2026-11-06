@@ -1,7 +1,7 @@
 {
-    "version":  "5.4.0",
+    "version":  "5.5.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.4.0.zip",
-    "sha256":  "47cfa5e8a4013dd95676b1b4ffbb079f605d75a6df721d5d99bba37a5e4444a9",
-    "notes":  "More responsive one-second measured Wi-Fi speeds, fresh-sample checks and sample-time visibility."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.5.0.zip",
+    "sha256":  "7444167bac88b56e522ccdcea873969ad67fc273b93356d1127e948079479e14",
+    "notes":  "Task Manager-aligned Kbps/Mbps live speeds and warning when an old monitoring service is still running."
 }
