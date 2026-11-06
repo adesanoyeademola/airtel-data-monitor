@@ -23,6 +23,13 @@ jobs:
           cd ios/build
           tar -xJf source.tar.xz
           python3 scripts/icon.py
+          python3 - <<'PY'
+          from pathlib import Path
+          app=Path('TNet/TNetApp.swift')
+          original=app.read_text()
+          dashboard=Path('../Dashboard.swift.fragment').read_text()
+          app.write_text(original[:original.index('struct Dashboard: View')] + dashboard)
+          PY
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Compile native iOS app (unsigned)
