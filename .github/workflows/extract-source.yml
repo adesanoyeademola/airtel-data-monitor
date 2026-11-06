@@ -1,0 +1,27 @@
+name: Extract current monitor source for diagnostics
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/extract-source.yml'
+permissions:
+  contents: write
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract app source
+        run: |
+          python - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          Path('diagnostics').mkdir(exist_ok=True)
+          with ZipFile('releases/AirtelMonitor-5.3.0.zip') as z:
+              for name in ('AirtelMonitorNative.cs','monitor.ps1'):
+                  Path('diagnostics',name).write_bytes(z.read(name))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/AirtelMonitorNative.cs diagnostics/monitor.ps1
+          git diff --cached --quiet || (git commit -m 'Expose published source for rate diagnostics' && git push)
