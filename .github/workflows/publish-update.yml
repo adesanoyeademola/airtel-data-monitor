@@ -18,7 +18,7 @@ jobs:
         with:
           persist-credentials: true
       - name: Validate source package and compile native Windows UI
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference='Stop'
           $archive='release-candidate/AirtelMonitor-5.1.0.zip'
