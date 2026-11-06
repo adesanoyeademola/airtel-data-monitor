@@ -1,7 +1,7 @@
 {
-    "version":  "6.1.0",
+    "version":  "6.2.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.1.0.zip",
-    "sha256":  "22f9d0c6137b5df440c4d315d90d7d2c539bf8f4b26843c762ed14ba92e15dd3",
-    "notes":  "Use only fresh, direct Wi-Fi adapter-rate samples for displayed upload/download speeds, not delayed daily-usage differences. Existing cumulative history and auto-start are unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.2.0.zip",
+    "sha256":  "39dccd9ba8ae8400a3359adaef16477060a969738c9c8565912d2fbf0fce4a69",
+    "notes":  "Adds a Live speed and Daily usage chart switch, 90-second timestamped download/upload history, missing-sample gaps and automatic Kbps/Mbps scaling. Leaves monitoring engine and stored usage untouched."
 }
