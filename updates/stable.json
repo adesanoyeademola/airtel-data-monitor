@@ -1,7 +1,7 @@
 {
-    "version":  "6.7.0",
+    "version":  "6.8.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.7.0.zip",
-    "sha256":  "724d7902898bddf682f074cab9a64b08d746834ce8918912da4a401e02a96b5a",
-    "notes":  "Uses Windows Network Interface performance counters for live upload/download speeds when available; falls back to T-Net adapter counters. Speed cards and live chart share source. Saved usage history and Wi-Fi label unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.8.0.zip",
+    "sha256":  "8955e81806741c47dd7456c4e9a0594baa2e5023f8a4e001bc4759832ab3e570",
+    "notes":  "Shows the current live speed source (Windows performance counters or adapter fallback) under Network. Live speed calculations, Wi-Fi detection and stored data remain unchanged."
 }
