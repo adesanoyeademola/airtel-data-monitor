@@ -1,0 +1,56 @@
+name: Build T-Net iPhone IPA
+on:
+  push:
+    paths:
+      - '.github/workflows/build-tnet-ios.yml'
+      - 'ios/tnet-source.tar.xz.base64'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack verified T-Net iOS source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ios/build
+          base64 -D -i ios/tnet-source.tar.xz.base64 -o ios/build/source.tar.xz
+          echo '8ab89c30725f3df9910de87386a63fbc1a8a49029bc7d764a640601fc568758e  ios/build/source.tar.xz' | shasum -a 256 -c -
+          cd ios/build
+          tar -xJf source.tar.xz
+          python3 scripts/icon.py
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Compile native iOS app (unsigned)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ios/build
+          xcodegen generate --spec project.yml
+          xcodebuild -project TNet.xcodeproj -scheme TNet -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/TNetDerived" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build > "$RUNNER_TEMP/tnet-build.log" 2>&1 || { tail -n 130 "$RUNNER_TEMP/tnet-build.log"; exit 1; }
+          APP="$RUNNER_TEMP/TNetDerived/Build/Products/Release-iphoneos/TNet.app"
+          test -d "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/TNet.app
+          /usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' Payload/TNet.app/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' Payload/TNet.app/Info.plist
+          test -f Payload/TNet.app/TNet
+          ditto -c -k --keepParent Payload "$GITHUB_WORKSPACE/T-Net-iPhone-v0.1-unsigned.ipa"
+          echo 'Unsigned IPA created. User must sign locally.'
+      - name: Save IPA as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: T-Net-iPhone-unsigned-IPA
+          path: T-Net-iPhone-v0.1-unsigned.ipa
+          retention-days: 30
+      - name: Publish public beta IPA download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create ios-v0.1.0-beta "T-Net-iPhone-v0.1-unsigned.ipa" --repo "$GITHUB_REPOSITORY" --title "T-Net iPhone 0.1 (Unsigned Beta)" --notes "Native iPhone app compiled on GitHub-hosted macOS. This IPA is unsigned: to install, sign on your own Windows PC using Sideloadly with your Apple Account. Local counters are an experimental measurement method and must be tested on-device. No VPN or laptop connection needed after installation. Free Apple accounts require periodic re-signing." --prerelease --latest=false || gh release upload ios-v0.1.0-beta "T-Net-iPhone-v0.1-unsigned.ipa" --repo "$GITHUB_REPOSITORY" --clobber
