@@ -1,0 +1,42 @@
+name: Publish T-Net Windows v5.7 service recovery
+on:
+  push:
+    paths:
+      - '.github/workflows/v57.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and release safe restart update
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-5.6.0.zip work
+          python release-candidate/patch_v57.py
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){ throw 'PowerShell monitoring engine syntax invalid' }
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Management.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $source=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          if(!$source.Contains('const string AppVersion = "5.7.0";') -or !$source.Contains('StopPriorMonitoringProcesses()') -or !$source.Contains('Restart monitoring service')) { throw 'Service restart control missing' }
+          $output='releases/AirtelMonitor-5.7.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='5.7.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.7.0.zip'
+            sha256=$sha
+            notes='Detect and safely stop stale T-Net PowerShell monitoring processes on startup, plus a tray service restart action, while retaining saved usage records.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish validated T-Net v5.7 engine restart repair'
+          git push
