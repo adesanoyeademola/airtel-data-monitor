@@ -1,0 +1,46 @@
+name: Validate and publish Windows update
+on:
+  push:
+    paths:
+      - 'release-candidate/**.zip'
+      - '.github/workflows/publish-update.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: airtel-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Validate source package and compile native Windows UI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $archive='release-candidate/AirtelMonitor-5.1.0.zip'
+          if (!(Test-Path $archive)) { throw 'Release candidate missing. No release will be published.' }
+          $stage=Join-Path $env:RUNNER_TEMP 'airtel-stage'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Expand-Archive -LiteralPath $archive -DestinationPath $stage
+          $cs=Join-Path $stage 'AirtelMonitorNative.cs'
+          $ps=Join-Path $stage 'monitor.ps1'
+          if (!(Test-Path $cs) -or !(Test-Path $ps)) { throw 'Release is missing native UI or monitoring engine.' }
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile($ps,[ref]$null,[ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) { throw "PowerShell syntax errors: $($parseErrors -join '; ')" }
+          Add-Type -Path $cs -OutputAssembly (Join-Path $stage 'AirtelMonitorTest.exe') -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if (!(Select-String -Path $cs -SimpleMatch '5.1.0')) { throw 'Version mismatch.' }
+          if (!(Select-String -Path $ps -SimpleMatch 'rateRxBps')) { throw 'Engine rate endpoint missing.' }
+          $hash=(Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          $url='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/release-candidate/AirtelMonitor-5.1.0.zip'
+          $manifest=[ordered]@{version='5.1.0';status='available';packageUrl=$url;sha256=$hash;notes='Improve live transfer rates, sample freshness and header readability.'}
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path 'updates/stable.json' -Encoding utf8
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add updates/stable.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) { git commit -m 'Publish validated Windows v5.1.0 update'; git push }
