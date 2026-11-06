@@ -1,0 +1,182 @@
+struct Dashboard: View {
+    @EnvironmentObject private var store: TrafficStore
+    @Environment(\.scenePhase) private var phase
+    @State private var wifiHistory = true
+    @State private var days = 7
+    private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    summaryCards
+                    livePanel
+                    historyPanel
+                    statusPanel
+                    disclaimer
+                }
+                .padding(18)
+            }
+            .background(background)
+            .toolbar(.hidden, for: .navigationBar)
+            .onReceive(timer) { _ in
+                if phase == .active { store.record() }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "wifi")
+                .font(.title2)
+                .foregroundStyle(accent)
+            Text("T-Net")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+            Spacer()
+            Text("Local • VPN-free")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var summaryCards: some View {
+        HStack(spacing: 12) {
+            summary("Wi-Fi today", bytes: store.day(Date()).wifi.total, symbol: "wifi")
+            summary("Cellular today", bytes: store.day(Date()).cellular.total, symbol: "antenna.radiowaves.left.and.right")
+        }
+    }
+
+    private var livePanel: some View {
+        section {
+            HStack {
+                Text("Live traffic").font(.headline)
+                Spacer()
+                Text("While open").font(.caption).foregroundStyle(.secondary)
+            }
+            HStack {
+                speed("Wi-Fi", rate: store.wifiKbps)
+                Spacer()
+                speed("Cellular", rate: store.cellularKbps)
+            }
+        }
+    }
+
+    private var historyPanel: some View {
+        section {
+            HStack {
+                Text("Usage history").font(.headline)
+                Spacer()
+            }
+            Picker("Network", selection: $wifiHistory) {
+                Text("Wi-Fi").tag(true)
+                Text("Cellular").tag(false)
+            }
+            .pickerStyle(.segmented)
+
+            Picker("Period", selection: $days) {
+                Text("7 days").tag(7)
+                Text("30 days").tag(30)
+            }
+            .pickerStyle(.segmented)
+
+            historyChart.frame(height: 170)
+
+            HStack {
+                Text("Total").foregroundStyle(.secondary)
+                Spacer()
+                Text(format(store.total(days: days, wifi: wifiHistory))).bold()
+            }
+        }
+    }
+
+    private var historyChart: some View {
+        Chart {
+            ForEach((0..<days).reversed(), id: \.self) { offset in
+                if let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date()) {
+                    BarMark(
+                        x: .value("Day", date, unit: .day),
+                        y: .value("MB", volumeMB(for: date))
+                    )
+                    .foregroundStyle(accent.gradient)
+                }
+            }
+        }
+    }
+
+    private func volumeMB(for date: Date) -> Double {
+        let data = store.day(date)
+        let total = wifiHistory ? data.wifi.total : data.cellular.total
+        return Double(total) / 1_048_576
+    }
+
+    private var statusPanel: some View {
+        section {
+            HStack {
+                Text("Measurement status").font(.headline)
+                Spacer()
+                Image(systemName: store.hasWarnings ? "exclamationmark.triangle" : "checkmark.circle")
+                    .foregroundStyle(store.hasWarnings ? Color.orange : Color.green)
+            }
+            Text(store.status)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("Last recorded: " + (store.lastRead?.formatted(date: .abbreviated, time: .standard) ?? "Not yet"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button {
+                store.record(reason: "Manual")
+            } label: {
+                Label("Refresh usage", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+                    .padding(12)
+                    .background(accent, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .tint(.white)
+        }
+    }
+
+    private var disclaimer: some View {
+        Text("Usage uses iOS interface counters. Background refresh is opportunistic; long gaps, restarts and network changes can make totals incomplete. This is not your Airtel SIM balance.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private func section<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12, content: content)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(tile, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func summary(_ title: String, bytes: UInt64, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: symbol).foregroundStyle(accent)
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(format(bytes))
+                .font(.system(size: 23, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+        .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tile, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func speed(_ title: String, rate: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(rate.map { $0 >= 1000 ? String(format: "%.1f Mbps", $0 / 1000) : String(format: "%.1f Kbps", $0) } ?? "—")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+        }
+    }
+
+    private func format(_ bytes: UInt64) -> String {
+        let n = Double(bytes)
+        if n < 1024 { return String(format: "%.0f B", n) }
+        if n < 1_048_576 { return String(format: "%.1f KB", n / 1024) }
+        if n < 1_073_741_824 { return String(format: "%.1f MB", n / 1_048_576) }
+        return String(format: "%.2f GB", n / 1_073_741_824)
+    }
+}
