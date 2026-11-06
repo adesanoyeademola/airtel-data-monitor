@@ -110,13 +110,6 @@ s=one(s,
 '''            SetIndicator("Old monitoring service",1);''')
 
 s=one(s,
-'''          if(valid && fresh){
-            // Direct rates and daily totals originate from the same adapter samples.''',
-'''          if(valid && fresh){
-            // Direct rates and daily totals originate from the same adapter samples.''')
-# The above self-replacement intentionally checks the v5.7 implementation.
-
-s=one(s,
 '''            downloadSpeed.Text=Rate(fallbackValid && fallbackRx>0 && directRx==0?fallbackRx:directRx);
             uploadSpeed.Text=Rate(fallbackValid && fallbackTx>0 && directTx==0?fallbackTx:directTx);''',
 '''            double shownRx=fallbackValid && fallbackRx>0 && directRx==0?fallbackRx:directRx;
