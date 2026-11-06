@@ -1,0 +1,37 @@
+name: Publish Airtel Monitor v5.3
+on:
+  push:
+    paths:
+      - '.github/workflows/v53.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, validate and publish v5.3
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          Invoke-WebRequest 'https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.2.0.zip' -OutFile baseline.zip
+          New-Item -ItemType Directory work | Out-Null
+          Expand-Archive baseline.zip work
+          python release-candidate/patch_v53.py
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){throw 'Monitoring engine syntax invalid'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $native=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          if(!$native.Contains('AutoScrollMinSize') -or !$native.Contains('fallbackValid') -or !$native.Contains('5.3.0')){throw 'Expected fixes missing'}
+          New-Item -ItemType Directory releases -Force | Out-Null
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 releases/AirtelMonitor-5.3.0.zip
+          $sha=(Get-FileHash releases/AirtelMonitor-5.3.0.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{version='5.3.0';status='available';packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-5.3.0.zip';sha256=$sha;notes='Restore scrollable Network details and improve measured live download/upload speeds.'}
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add releases/AirtelMonitor-5.3.0.zip updates/stable.json
+          git commit -m 'Publish validated Airtel Monitor v5.3.0'
+          git push
