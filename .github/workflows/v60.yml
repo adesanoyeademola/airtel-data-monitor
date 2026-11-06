@@ -1,0 +1,47 @@
+name: Publish T-Net Windows v6.0 automatic service recovery
+on:
+  push:
+    paths:
+      - '.github/workflows/v60.yml'
+      - 'release-candidate/patch_v60.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile, verify and publish service auto-start repair
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-5.9.0.zip work
+          python release-candidate/patch_v60.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){throw ('PowerShell engine syntax failure: '+($errors | Out-String))}
+          # Use exact references available in the already-installed updater.
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $src=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          foreach($required in @('const string AppVersion = "6.0.0";','ServiceResponding()','AutoRecoverEngine()','NumberStyles.Float,CultureInfo.InvariantCulture','PulseIndicator()')){
+            if(!$src.Contains($required)){throw "Missing expected code: $required"}
+          }
+          $output='releases/AirtelMonitor-6.0.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.0.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.0.0.zip'
+            sha256=$sha
+            notes='Fix automatic monitoring engine startup and recovery. Attach to an existing healthy engine without disrupting it; retain current speed, status indicator and saved usage history.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish validated T-Net v6.0 automatic engine recovery'
+          git push
