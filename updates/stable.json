@@ -1,7 +1,7 @@
 {
-    "version":  "6.9.0",
+    "version":  "6.10.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.9.0.zip",
-    "sha256":  "01c9a2a7171503f170d9f79ad6a3a9dcaa93fda388baf7e5a9a83497042f14f5",
-    "notes":  "Moves live-speed source text slightly above Adapter and adds timestamped, locally saved minute-scale Wi-Fi usage checkpoints with download, upload, and running daily totals in an optional Usage log view and CSV. Live speed calculations, monitoring engine and existing usage.json unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.10.0.zip",
+    "sha256":  "b0d3d453462462afbaa00a01c5466c19e1bc4730663ac89675fc8ef9a47c6bfc",
+    "notes":  "Clarify usage log timestamps as interval-end West Africa Time (UTC+1), preserve original CSV rows and measure new times using sample timestamps. Speeds and accumulated usage unchanged."
 }
