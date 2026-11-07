@@ -56,13 +56,13 @@ one('''          "Timestamped checkpoints (about 1 min)  •  click to open CSV"
 one('''      DateTime observed=sampleUtc.ToLocalTime();
       if(logLastObserved!=DateTime.MinValue && observed<=logLastObserved)return;''',
 '''      // Deduplicate by the engine's actual sample timestamp, while labeling
-      // a checkpoint using the dashboard's current WAT clock (not repeatedly
+      // a checkpoint using the same sample instant in WAT (not repeatedly
       // converting the service timestamp between different timezone kinds).
       DateTime measurementUtc=sampleUtc.ToUniversalTime();
       if(logLastMeasurementUtc!=DateTime.MinValue &&
          measurementUtc<=logLastMeasurementUtc)return;
       logLastMeasurementUtc=measurementUtc;
-      DateTime observed=DateTimeOffset.UtcNow.ToOffset(UsageZoneOffset).DateTime;
+      DateTime observed=new DateTimeOffset(measurementUtc).ToOffset(UsageZoneOffset).DateTime;
       if(logLastObserved!=DateTime.MinValue && observed<=logLastObserved)return;''')
 
 # The UI formatter must NOT depend on the system's timezone. CSV records from
