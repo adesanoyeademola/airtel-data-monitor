@@ -1,0 +1,55 @@
+name: Publish T-Net v6.10 WAT timestamp correction
+on:
+  push:
+    paths:
+      - '.github/workflows/v610.yml'
+      - 'release-candidate/patch_v610.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify accurate WAT timestamps without changing usage and speeds
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.9.0.zip work
+          $engineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v610.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineHash){throw 'Measurement engine was changed'}
+          $source=[IO.File]::ReadAllText('work/AirtelMonitorNative.cs')
+          foreach($part in @('const string AppVersion = "6.10.0";','UsageZoneOffset','Interval end (WAT)','FormatUsageTime','measurementUtc','downloadSpeed.Text=Rate(rateRx);','uploadSpeed.Text=Rate(rateTx);','wifi.Text=HotspotLabel(currentSsid);')){
+            if(!$source.Contains($part)){throw "Missing expected code: $part"}
+          }
+          $errs=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errs)|Out-Null
+          if($errs.Count -gt 0){throw 'Monitoring engine PowerShell syntax invalid'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly test.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $asm=[Reflection.Assembly]::LoadFile((Resolve-Path 'test.exe').Path)
+          $klass=$asm.GetType('AirtelMonitorNative.MainForm',$true)
+          $method=$klass.GetMethod('FormatUsageTime',[Reflection.BindingFlags]::Static -bor [Reflection.BindingFlags]::NonPublic)
+          if($null -eq $method){throw 'Missing WAT formatter'}
+          $instant=[DateTimeOffset]::Parse('2026-11-07T00:01:46+00:00',[cultureinfo]::InvariantCulture)
+          $formatted=[string]$method.Invoke($null,[object[]]@($instant))
+          if($formatted -cne '2026-11-07 01:01:46 AM WAT'){throw "Timezone test failed: $formatted"}
+          $output='releases/AirtelMonitor-6.10.0.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $output
+          $sha=(Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.10.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.10.0.zip'
+            sha256=$sha
+            notes='Clarify usage log timestamps as interval-end West Africa Time (UTC+1), preserve original CSV rows and measure new times using sample timestamps. Speeds and accumulated usage unchanged.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $output updates/stable.json
+          git commit -m 'Publish T-Net v6.10 WAT timestamp correction'
+          git push
