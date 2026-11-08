@@ -31,16 +31,11 @@ jobs:
           after=after.replace('    Panel signalStrengthTrack, signalStrengthFill;\n','')
           a=after.index('      detailScroll.Controls.Add(LabelText("Wi-Fi signal strength"));')
           b=after.index('      detailScroll.Controls.Add(LabelText("Last update"));',a)
-          after=after[:a]+'''      detailScroll.Controls.Add(LabelText("Wi-Fi signal strength"));signalStrength=LabelText("—",12,true);detailScroll.Controls.Add(signalStrength);
-          '''.rstrip()+'\n'+after[b:]
+          after=after[:a]+'      detailScroll.Controls.Add(LabelText("Wi-Fi signal strength"));signalStrength=LabelText("—",12,true);detailScroll.Controls.Add(signalStrength);\n'+after[b:]
           a=after.index('    // The exact reported 0-100% WLAN signal quality is displayed directly.')
           b=after.index('    void ApplyUsage(Dictionary<string,object> d){',a)
           after=after[:a]+after[b:]
-          after=after.replace('        UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");',
-          '''        if(signalStrength!=null){
-          string strength=Str(d,"wifiSignal");
-          signalStrength.Text=stat=="tracking" && !String.IsNullOrWhiteSpace(strength)?strength+"%":"—";
-        }''')
+          after=after.replace('        UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");', '        if(signalStrength!=null){\n          string strength=Str(d,"wifiSignal");\n          signalStrength.Text=stat=="tracking" && !String.IsNullOrWhiteSpace(strength)?strength+"%":"—";\n        }')
           if before!=after:
             from difflib import unified_diff
             print(''.join(list(unified_diff(before.splitlines(True),after.splitlines(True)))[:50]))
