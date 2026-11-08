@@ -163,7 +163,7 @@ one('''    void ShowWindow(){Show();WindowState=FormWindowState.Normal;Activate(
       // from that same click's MouseClick event.
       if((DateTime.UtcNow-signalTrayLastAutoHideUtc).TotalMilliseconds<300)return;
       RenderSignalTrayPopup();
-      Point click=Cursor.Position;
+      Point click=System.Windows.Forms.Cursor.Position;
       Rectangle area=Screen.FromPoint(click).WorkingArea;
       int x=Math.Max(area.Left,Math.Min(area.Right-signalTrayPopup.Width,
                        click.X-signalTrayPopup.Width+42));
