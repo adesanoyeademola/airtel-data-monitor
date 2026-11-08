@@ -1,7 +1,7 @@
 {
-    "version":  "6.11.0",
+    "version":  "6.12.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.11.0.zip",
-    "sha256":  "b8bf7fe0c4de3852089b4fdbcd21fd3ecb2526be2ea6a456483536703ea16326",
-    "notes":  "Add active Wi-Fi adapter switching and Windows-reported signal percentage; counter baselines guard against switch spikes. Previous usage, timestamps, UI and all charts retained. Physical Intel/Realtek switching still requires local verification."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.12.0.zip",
+    "sha256":  "882bd02a01264b8bdd129de88f05290929f4f9e99316216a593d6b005d9464ca",
+    "notes":  "Display-only color-coded live Wi-Fi signal bar with exact Windows-reported percentage: green 80â€“100%, yellow 50â€“79%, red 0â€“49%; unavailable on disconnect. Monitoring service, adapter switching, speeds, data history, layout and charts unchanged."
 }
