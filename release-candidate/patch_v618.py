@@ -103,6 +103,11 @@ one('    void ShowWindow(){','''    void LoadAppearanceChoice(){
     void AppearanceControl(Control control,bool light){
       control.BackColor=AppearanceColor(control.BackColor,light);
       control.ForeColor=AppearanceColor(control.ForeColor,light);
+      // Keep neutral header buttons readable on light surfaces; retain
+      // white text on the coloured Save hotspot button.
+      if(control is Button && control.BackColor!=accent &&
+         (control.ForeColor==Color.White || control.ForeColor==lightInk))
+        control.ForeColor=light?lightInk:Color.White;
       if(control is Label && control.Text=="T-Net")
         control.ForeColor=light?lightInk:Color.White;
       var grid=control as DataGridView;
