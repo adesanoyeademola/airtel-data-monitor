@@ -1,0 +1,101 @@
+name: Publish T-Net v6.17 live tray signal popup
+on:
+  push:
+    paths:
+      - '.github/workflows/v617.yml'
+      - 'release-candidate/patch_v617.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify-build-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply tray-popup patch and check unrelated source remains unchanged
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.16.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          $engineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v617.py
+          if($LASTEXITCODE -ne 0){throw 'Popup patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineHash){throw 'Monitoring engine changed unexpectedly'}
+          @'
+          from pathlib import Path
+          from difflib import unified_diff
+          old=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          new=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          assert new.count('tray.MouseClick+=(sender,e)=>')==1
+          assert 'tray.ContextMenuStrip=menu;' in new
+          assert 'tray.DoubleClick+=(s,e)=>ShowWindow();' in new
+          assert 'UpdateSignalTrayState(stat,Str(d,"adapterName"),Str(d,"wifiSignal"));' in new
+          assert 'signalTrayFill.BackColor=SignalBarColor(v);' in new
+          assert 'signalTrayPopup.Deactivate+=' in new
+          assert 'signalTrayLastAutoHideUtc' in new
+          assert 'new VScrollBar{' in new
+          assert new.count('UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");')==1
+          assert 'const string AppVersion = "6.17.0";' in new
+          # Compare structural invariants from the previous published build
+          for q in ['adapter=LabelText(', 'signalStrengthTrack=new Panel{',
+                    'signalStrength.Width=68;', 'downloadSpeed.Text=Rate(rateRx)',
+                    'uploadSpeed.Text=Rate(rateTx)', 'TrackUsageCheckpoint(',
+                    'requestedCounterAdapter=stat=="tracking"',
+                    'detailBar.ValueChanged+=(sender,e)=>detailScroll.Top=-detailBar.Value;']:
+            assert q in old and q in new, 'Missing baseline feature '+q
+          # No changes to original dashboard BuildUi markup (except its tray wiring).
+          a=old.index('    void BuildUi(){')
+          b=old.index('    Label Metric(',a)
+          c=new.index('    void BuildUi(){')
+          d=new.index('    Label Metric(',c)
+          assert old[a:b]==new[c:d], 'Dashboard layout changed'
+          print('PASS: dashboard markup preserved and tray popup hooks registered')
+          '@ | Set-Content work/check_tray.py -Encoding UTF8
+          python work/check_tray.py
+          if($LASTEXITCODE -ne 0){throw 'Tray source preservation test failed'}
+      - name: Compile WinForms popup and test signal levels with reflection
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count){throw 'PowerShell monitor syntax invalid'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path 'work/AirtelDataMonitor.exe')){throw 'Executable missing after compilation'}
+          $asm=[Reflection.Assembly]::LoadFile((Resolve-Path work/AirtelDataMonitor.exe).Path)
+          $typ=$asm.GetType('AirtelMonitorNative.MainForm',$true)
+          foreach($method in @('CreateSignalTrayPopup','UpdateSignalTrayState','RenderSignalTrayPopup','ToggleSignalTrayPopup','SignalBarColor')){
+            if(-not @($typ.GetMethods([Reflection.BindingFlags]'Static,Instance,Public,NonPublic')|Where-Object {$_.Name -eq $method}).Count){throw ('Popup method missing: '+$method)}
+          }
+          $color=$typ.GetMethod('SignalBarColor',[Reflection.BindingFlags]'Static,NonPublic')
+          $tests=@(@(0,240,105,105),@(49,240,105,105),@(50,236,185,65),@(79,236,185,65),@(80,79,212,161),@(100,79,212,161))
+          foreach($v in $tests){
+            $result=[System.Drawing.Color]$color.Invoke($null,[object[]]@([int]$v[0]))
+            if($result.R -ne $v[1] -or $result.G -ne $v[2] -or $result.B -ne $v[3]){throw ('Wrong signal color at '+$v[0]+'%')}
+            Write-Host ('PASS: '+$v[0]+'% native signal color')
+          }
+          Write-Host 'PASS: tray popup methods compiled in Windows executable'
+      - name: Publish release ZIPs and update channel
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $src='releases/AirtelMonitor-6.17.0.zip'
+          $bin='releases/T-Net-6.17.0-Windows-compiled.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $src
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 $bin
+          $sha=(Get-FileHash $src -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.17.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.17.0.zip'
+            sha256=$sha
+            notes='Click the T-Net tray icon to show or dismiss a live Windows-reported Wi-Fi signal flyout, connected adapter, status and color-coded bar. Click away/Escape to close; existing right-click menu and main dashboard remain. No changes to network monitoring or usage history.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $src $bin updates/stable.json
+          git commit -m 'Publish T-Net v6.17 live tray Wi-Fi signal flyout'
+          git push
