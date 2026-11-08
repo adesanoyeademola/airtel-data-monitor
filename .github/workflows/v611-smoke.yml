@@ -1,0 +1,51 @@
+name: T-Net 6.11 non-destructive Windows service smoke test
+on:
+  push:
+    paths:
+      - '.github/workflows/v611-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start isolated PowerShell monitoring service and request local summary
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory smoke -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.11.0.zip smoke
+          $script=(Resolve-Path smoke/monitor.ps1).Path
+          $stdout=(Join-Path (Get-Location).Path 'smoke/stdout.log')
+          $stderr=(Join-Path (Get-Location).Path 'smoke/stderr.log')
+          $proc=Start-Process powershell.exe -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -File "'+$script+'" -NoBrowser') -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $passed=$false
+          try{
+            for($i=0;$i -lt 35;$i++){
+              Start-Sleep -Seconds 1
+              try{
+                $r=Invoke-WebRequest 'http://127.0.0.1:8787/api/summary' -UseBasicParsing -TimeoutSec 2
+                if($r.StatusCode -ne 200){continue}
+                $d=$r.Content|ConvertFrom-Json
+                foreach($key in @('status','adapterName','wifiSignal','rateRxBps','rateTxBps','todayRx','todayTx','sevenDayTotal','rateSampleTime')){
+                  if(!($d.PSObject.Properties.Name -contains $key)){throw "Missing API field $key"}
+                }
+                if($d.status -notin @('wrong-network','tracking','adapter-error','not-configured')){throw "Unexpected service status $($d.status)"}
+                $passed=$true
+                Write-Host ("PASS: local API returned HTTP 200 with expected fields and status ["+$d.status+"]")
+                break
+              }catch{
+                if($i -eq 34){Write-Host ("Final smoke error: "+$_.Exception.Message)}
+              }
+            }
+          }finally{
+            try {if(!$proc.HasExited){Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue}}catch{}
+          }
+          if(!$passed){
+            if(Test-Path $stdout){Get-Content $stdout -Tail 50}
+            if(Test-Path $stderr){Get-Content $stderr -Tail 50}
+            throw 'PowerShell monitoring service failed to start or provide the API summary'
+          }
+          # The smoke test uses an isolated ephemeral CI directory and never touches user data.
