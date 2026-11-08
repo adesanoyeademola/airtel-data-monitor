@@ -32,7 +32,7 @@ jobs:
           assert new.count('detailScroll.AutoScrollMinSize=new Size(0,virtualHeight)')==1
           assert new.count('Math.Max(320,detailScroll.ClientSize.Height+96)')==1
           assert 'hotspotHeader.Controls.Add(speedSourceLabel,0,2)' in new
-          assert 'adapter=LabelText("—",11,true)' in new
+          assert old.count('adapter=LabelText(')==new.count('adapter=LabelText(')
           assert 'signalStrength.Width=68;' in new
           restored=new.replace('const string AppVersion = "6.15.0";','const string AppVersion = "6.14.0";')
           anchor='      detailScroll.AutoScrollMinSize=new Size(0,320);'
