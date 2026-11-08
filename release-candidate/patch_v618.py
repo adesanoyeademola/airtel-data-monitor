@@ -60,7 +60,7 @@ one('    void ShowWindow(){','''    void LoadAppearanceChoice(){
     bool WindowsPrefersLight(){
       try{
         using(var key=Registry.CurrentUser.OpenSubKey(
-          @"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize")){
+          @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")){
           object value=key==null?null:key.GetValue("AppsUseLightTheme");
           return value!=null && Convert.ToInt32(value,CultureInfo.InvariantCulture)!=0;
         }
