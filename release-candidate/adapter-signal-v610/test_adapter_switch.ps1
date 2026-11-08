@@ -63,12 +63,12 @@ function Total {
   if(!$script:State.daily.ContainsKey($date)){return [double]0}
   return [double]$script:State.daily[$date].rx+[double]$script:State.daily[$date].tx
 }
-$connected=@(Get-ConnectedWifi)
-Check ($connected.Count -eq 1) 'one connected interface recognized'
-Check ($connected[0].name -eq 'WiFi') 'Intel interface name'
-Check ($connected[0].signal -eq 92) 'Intel reported Wi-Fi signal is 92'
-Write-Host ('Observed SSID=['+$connected[0].ssid+'] Target=['+$script:State.targetSsid+']')
-Write-Host ('Observed equality='+[string]::Equals($connected[0].ssid,$script:State.targetSsid,[System.StringComparison]::OrdinalIgnoreCase))
+$connectedList=@(Get-ConnectedWifi)
+Check ($connectedList.Count -eq 1) 'one connected interface recognized'
+Check ($connectedList[0].name -eq 'WiFi') 'Intel interface name'
+Check ($connectedList[0].signal -eq 92) 'Intel reported Wi-Fi signal is 92'
+Write-Host ('Observed SSID=['+$connectedList[0].ssid+'] Target=['+$script:State.targetSsid+']')
+Write-Host ('Observed equality='+[string]::Equals($connectedList[0].ssid,$script:State.targetSsid,[System.StringComparison]::OrdinalIgnoreCase))
 Write-Host ('Re-fetch count='+@(Get-ConnectedWifi).Count)
 Write-Host ('Active before sample: '+((Resolve-ActiveWifi) | Out-String))
 Take-Sample
