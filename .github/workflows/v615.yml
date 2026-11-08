@@ -1,0 +1,82 @@
+name: Publish T-Net v6.15 persistent Network scrollbar
+on:
+  push:
+    paths:
+      - '.github/workflows/v615.yml'
+      - 'release-candidate/patch_v615.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply surgical scrollbar patch and validate source equivalence
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.14.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $hash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v615.py
+          if($LASTEXITCODE -ne 0){throw 'Scrollbar patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $hash){throw 'Monitor changed'}
+          @'
+          from pathlib import Path
+          from difflib import unified_diff
+          old=Path("work/BaselineNative.cs").read_text(encoding="utf-8-sig")
+          new=Path("work/AirtelMonitorNative.cs").read_text(encoding="utf-8-sig")
+          assert new.count('detailScroll.SizeChanged+=(sender,e)=>')==1
+          assert new.count('detailScroll.AutoScrollMinSize=new Size(0,virtualHeight)')==1
+          assert new.count('Math.Max(320,detailScroll.ClientSize.Height+96)')==1
+          assert 'hotspotHeader.Controls.Add(speedSourceLabel,0,2)' in new
+          assert 'adapter=LabelText("—",11,true)' in new
+          assert 'signalStrength.Width=68;' in new
+          restored=new.replace('const string AppVersion = "6.15.0";','const string AppVersion = "6.14.0";')
+          anchor='      detailScroll.AutoScrollMinSize=new Size(0,320);'
+          a=restored.index(anchor)+len(anchor)
+          b=restored.index('      detailScroll.Controls.Add(LabelText("Last update"));',a)
+          restored=restored[:a]+restored[b:]
+          if old!=restored:
+            print(''.join(list(unified_diff(old.splitlines(True),restored.splitlines(True)))[:40]))
+            raise AssertionError('Unexpected non-scrollbar source differences')
+          print('PASS: Only version and scrollbar SizeChanged handler added.')
+          '@ | Set-Content work/verify.py -Encoding UTF8
+          python work/verify.py
+          if($LASTEXITCODE -ne 0){throw 'Source equivalence failed'}
+      - name: Compile WinForms application and validate resizing scroll height logic
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'EXE not compiled'}
+          # The scrollbar must retain overflow at compact and maximized viewport sizes.
+          foreach($height in @(1,90,180,320,540,900,1440,2160)){
+            $virtual=[Math]::Max(320,$height+96)
+            if($virtual -le $height){throw "Scrollbar would disappear at viewport $height"}
+            Write-Host "PASS: viewport $height px, scrollable height $virtual px"
+          }
+      - name: Publish source update and compiled Windows package
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $src='releases/AirtelMonitor-6.15.0.zip'
+          $bin='releases/T-Net-6.15.0-Windows-compiled.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $src
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 $bin
+          $sha=(Get-FileHash $src -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.15.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.15.0.zip'
+            sha256=$sha
+            notes='Ensure the existing Network details scrollbar stays visible at maximized and normal sizes. GLOBAL, live speed source, Adapter and signal strength remain fixed; font sizes, signal line, monitoring and history unchanged.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $src $bin updates/stable.json
+          git commit -m 'Publish T-Net v6.15 persistent Network details scrollbar'
+          git push
