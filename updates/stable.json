@@ -1,7 +1,7 @@
 {
-    "version":  "6.13.0",
+    "version":  "6.14.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.13.0.zip",
-    "sha256":  "ab055a577b4d0f4c3084b822060356d7154d97c627ed94624265108adf55f98b",
-    "notes":  "Network-panel UI only: always show live-speed source, connected adapter, and color-coded Wi-Fi signal above the remaining details scroller. Remove outdated Airtel-specific disclaimer. Unchanged speeds, adapter detection, usage logs, charts and history."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.14.0.zip",
+    "sha256":  "def2a18321fc1fd0c463533e4a19653464ffdaad04944c697e8ab06e80ac8629",
+    "notes":  "Network panel only: Live speed source pinned immediately below GLOBAL, Adapter next and signal strength after Adapter; original scrolling design restored. Existing adapter and signal fonts/sizes, all monitoring code, speeds and history remain unchanged."
 }
