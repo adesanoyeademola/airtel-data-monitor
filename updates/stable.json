@@ -1,7 +1,7 @@
 {
-    "version":  "6.14.0",
+    "version":  "6.15.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.14.0.zip",
-    "sha256":  "def2a18321fc1fd0c463533e4a19653464ffdaad04944c697e8ab06e80ac8629",
-    "notes":  "Network panel only: Live speed source pinned immediately below GLOBAL, Adapter next and signal strength after Adapter; original scrolling design restored. Existing adapter and signal fonts/sizes, all monitoring code, speeds and history remain unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.15.0.zip",
+    "sha256":  "740e08c38e6ac6c92241e71a3a7e704c879e0c76de00a0347dd939999028e3d1",
+    "notes":  "Ensure the existing Network details scrollbar stays visible at maximized and normal sizes. GLOBAL, live speed source, Adapter and signal strength remain fixed; font sizes, signal line, monitoring and history unchanged."
 }
