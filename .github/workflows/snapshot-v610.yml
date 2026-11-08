@@ -1,0 +1,27 @@
+name: Snapshot released T-Net 6.10 for patch validation
+on:
+  push:
+    paths:
+      - '.github/workflows/snapshot-v610.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract-source:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract exact released source without changing published package
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $folder='diagnostics/released-v610'
+          New-Item -ItemType Directory $folder -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.10.0.zip $folder -Force
+          $source=[IO.File]::ReadAllText("$folder/AirtelMonitorNative.cs")
+          if(!$source.Contains('const string AppVersion = "6.10.0";')){throw 'Unexpected version'}
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $folder
+          git commit -m 'Snapshot released 6.10 source for adapter patch validation'
+          git push
