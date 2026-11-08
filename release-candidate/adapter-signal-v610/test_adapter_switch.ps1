@@ -67,6 +67,9 @@ $connected=@(Get-ConnectedWifi)
 Check ($connected.Count -eq 1) 'one connected interface recognized'
 Check ($connected[0].name -eq 'WiFi') 'Intel interface name'
 Check ($connected[0].signal -eq 92) 'Intel reported Wi-Fi signal is 92'
+Write-Host ('Observed SSID=['+$connected[0].ssid+'] Target=['+$script:State.targetSsid+']')
+Write-Host ('Observed equality='+[string]::Equals($connected[0].ssid,$script:State.targetSsid,[System.StringComparison]::OrdinalIgnoreCase))
+Write-Host ('Re-fetch count='+@(Get-ConnectedWifi).Count)
 Write-Host ('Active before sample: '+((Resolve-ActiveWifi) | Out-String))
 Take-Sample
 Write-Host ('After sample: active=['+$script:ActiveAdapter+'] status=['+$script:Status+'] error=['+$script:ErrorText+'] SSID=['+$script:Sample.ssid+']')
