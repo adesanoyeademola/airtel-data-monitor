@@ -1,7 +1,7 @@
 {
-    "version":  "6.16.0",
+    "version":  "6.17.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.16.0.zip",
-    "sha256":  "36312cde0219621b37c2ffce286288a6c43d74e04f1ae5b8c979a4665637f1ae",
-    "notes":  "Replace Network details conditional autoscroll with always-visible interactive scrollbar; align signal bar start under its label and footer text with Network card left edge. Preserve adapter, signal and dashboard sizes, all monitoring/usage logic and saved history."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.17.0.zip",
+    "sha256":  "d0d3c316324192c9a3b0e0ba017d18d3dbcc50f453316c5b6ca947ee73720b88",
+    "notes":  "Click the T-Net tray icon to show or dismiss a live Windows-reported Wi-Fi signal flyout, connected adapter, status and color-coded bar. Click away/Escape to close; existing right-click menu and main dashboard remain. No changes to network monitoring or usage history."
 }
