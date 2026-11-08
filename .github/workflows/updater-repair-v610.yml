@@ -1,0 +1,50 @@
+name: Validate and publish T-Net updater-only repair
+on:
+  push:
+    paths:
+      - '.github/workflows/updater-repair-v610.yml'
+      - 'release-candidate/updater-repair-v610/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify repaired PowerShell scripts parse
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          foreach($file in @('release-candidate/updater-repair-v610/Apply_Update.ps1','release-candidate/updater-repair-v610/Install_Updater_Repair.ps1','release-candidate/updater-repair-v610/Test_Updater_Windows.ps1')){
+            $parseErrors=$null
+            [System.Management.Automation.Language.Parser]::ParseFile($file,[ref]$null,[ref]$parseErrors) | Out-Null
+            if($parseErrors.Count){throw ("PowerShell parse error in "+$file+": "+($parseErrors|Out-String))}
+          }
+      - name: Run isolated closed app, running app, wrong-name and file-lock update tests
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File release-candidate/updater-repair-v610/Test_Updater_Windows.ps1
+          if($LASTEXITCODE -ne 0){throw 'Windows updater integration tests failed'}
+      - name: Publish validated updater-only ZIP
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $out='releases/TNet_Updater_Repair_Validated_v6.10.zip'
+          if(!(Test-Path 'releases')){New-Item -ItemType Directory releases | Out-Null}
+          Compress-Archive -Path 'release-candidate/updater-repair-v610/Apply_Update.ps1','release-candidate/updater-repair-v610/Install_Updater_Repair.ps1','release-candidate/updater-repair-v610/REPAIR_UPDATER.cmd','release-candidate/updater-repair-v610/README.txt' -DestinationPath $out -Force
+          $z=[IO.Compression.ZipFile]::OpenRead((Resolve-Path $out).Path)
+          try{
+            $names=@($z.Entries | ForEach-Object {$_.FullName})
+            foreach($expect in @('Apply_Update.ps1','Install_Updater_Repair.ps1','REPAIR_UPDATER.cmd','README.txt')){
+              if($names -notcontains $expect){throw "Missing package file $expect"}
+            }
+            if($names.Count -ne 4){throw "Unexpected packaged files: $($names -join ', ')"}
+          }finally{$z.Dispose()}
+          Write-Host ("Validated repair ZIP SHA256: "+(Get-FileHash $out -Algorithm SHA256).Hash)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $out
+          git commit -m 'Publish Windows-tested updater-only repair package'
+          git push
