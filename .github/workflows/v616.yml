@@ -1,0 +1,98 @@
+name: Publish T-Net v6.16 actual scrollbar and alignment fixes
+on:
+  push:
+    paths:
+      - '.github/workflows/v616.yml'
+      - 'release-candidate/patch_v616.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify-build-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply network layout patch and check other code unchanged
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.15.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          $serviceHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v616.py
+          if($LASTEXITCODE -ne 0){throw 'Network patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $serviceHash){throw 'Monitoring engine must stay unchanged'}
+          @'
+          from pathlib import Path
+          old=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          new=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          reverted=new.replace('const string AppVersion = "6.16.0";','const string AppVersion = "6.15.0";')
+          a=old.index('      var layoutNetwork=new TableLayoutPanel')
+          b=old.index('      var chPanel=PanelCard();',a)
+          c=reverted.index('      var layoutNetwork=new TableLayoutPanel')
+          d=reverted.index('      var chPanel=PanelCard();',c)
+          reverted=reverted[:c]+old[a:b]+reverted[d:]
+          old_footer='outer.Controls.Add(new Label{Dock=DockStyle.Fill,Text="Monitoring runs while this app is open or minimized to the tray.",ForeColor=muted,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Segoe UI",9)},0,5);'
+          new_footer='outer.Controls.Add(new Label{Dock=DockStyle.Fill,Text="Monitoring runs while this app is open or minimized to the tray.",ForeColor=muted,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Segoe UI",9),Margin=new Padding(8,0,0,0)},0,5);'
+          reverted=reverted.replace(new_footer,old_footer)
+          if old!=reverted:
+            from difflib import unified_diff
+            print(''.join(list(unified_diff(old.splitlines(True),reverted.splitlines(True)))[:60]))
+            raise AssertionError('Unrelated changes detected')
+          assert 'detailBar.BringToFront();' in new
+          assert 'detailBar.ValueChanged+=(sender,e)=>detailScroll.Top=-detailBar.Value;' in new
+          assert 'detailBar.Enabled=scrollMax>0;' in new
+          assert 'net.SizeChanged+=(sender,e)=>{positionDetailBar();syncDetails();};' in new
+          assert 'Width=210,Height=9' in new
+          assert 'signalStrength.Width=68;' in new
+          print('PASS: Only Network scrolling, signal-bar margin, footer margin and version altered')
+          '@ | Set-Content work/verify_layout.py -Encoding UTF8
+          python work/verify_layout.py
+          if($LASTEXITCODE -ne 0){throw 'Scoped layout verification failed'}
+      - name: Compile WinForms release and perform scroll-control logic checks
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $errs=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errs)|Out-Null
+          if($errs.Count){throw 'PowerShell service syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Native EXE not created'}
+          Add-Type -AssemblyName System.Windows.Forms
+          $scroll=New-Object System.Windows.Forms.VScrollBar
+          $scroll.Visible=$true
+          foreach($pair in @(@(35,100),@(100,100),@(300,100),@(100,800))){
+            $content=[int]$pair[0];$viewport=[int]$pair[1]
+            $delta=[Math]::Max(0,$content-$viewport)
+            $scroll.LargeChange=[Math]::Max(1,[Math]::Min(30,$viewport))
+            $scroll.Maximum=$delta+$scroll.LargeChange-1
+            if($delta -gt 0){
+              $scroll.Value=$delta
+              if($scroll.Value -ne $delta){throw 'Cannot scroll to actual content bottom'}
+            }else{$scroll.Value=0}
+            Write-Host "PASS: scrollbar effective maximum $delta for content $content, viewport $viewport"
+          }
+          $scroll.Dispose()
+      - name: Publish regular source-update and compiled ZIP only after successful tests
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $source='releases/AirtelMonitor-6.16.0.zip'
+          $compiled='releases/T-Net-6.16.0-Windows-compiled.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $source
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 $compiled
+          $sha=(Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.16.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.16.0.zip'
+            sha256=$sha
+            notes='Replace Network details conditional autoscroll with always-visible interactive scrollbar; align signal bar start under its label and footer text with Network card left edge. Preserve adapter, signal and dashboard sizes, all monitoring/usage logic and saved history.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $source $compiled updates/stable.json
+          git commit -m 'Publish T-Net v6.16 persistent scroll and precise alignments'
+          git push
