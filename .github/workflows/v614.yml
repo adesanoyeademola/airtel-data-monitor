@@ -1,0 +1,77 @@
+name: Publish T-Net v6.14 exact Network layout correction
+on:
+  push:
+    paths:
+      - '.github/workflows/v614.yml'
+      - 'release-candidate/patch_v614.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply scoped UI patch and prove all other source remains identical
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.13.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $engineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v614.py
+          if($LASTEXITCODE -ne 0){throw 'UI patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineHash){throw 'PowerShell monitor changed'}
+          @'
+          from pathlib import Path
+          old=Path("work/BaselineNative.cs").read_text(encoding="utf-8-sig")
+          new=Path("work/AirtelMonitorNative.cs").read_text(encoding="utf-8-sig")
+          a=old.index('      var layoutNetwork=new TableLayoutPanel')
+          b=old.index('      var chPanel=PanelCard();',a)
+          c=new.index('      var layoutNetwork=new TableLayoutPanel')
+          d=new.index('      var chPanel=PanelCard();',c)
+          reverted=new[:c]+old[a:b]+new[d:]
+          reverted=reverted.replace('const string AppVersion = "6.14.0";','const string AppVersion = "6.13.0";')
+          assert reverted==old, 'Detected a change outside Network panel'
+          assert old.count('adapter=LabelText("—",11,true)')==new.count('adapter=LabelText("—",11,true)')
+          assert new.count('signalStrength.Width=68;')==1
+          assert new.count('signalStrengthTrack=new Panel{')==1
+          assert new.index('hotspotHeader.Controls.Add(speedSourceLabel,0,2)')<new.index('var adapterCaption=')
+          assert new.count('AutoScrollMinSize=new Size(0,320)')==1
+          assert new.count('WrapContents=false,AutoScroll=true')>=1
+          print('PASS: no changes outside Network panel/version, adapter and Wi-Fi strength dimensions retained')
+          '@ | Set-Content work/test_scoped_ui.py -Encoding UTF8
+          python work/test_scoped_ui.py
+          if($LASTEXITCODE -ne 0){throw 'UI scope test failed'}
+      - name: Compile Windows native application and keep original monitor
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $errs=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errs)|Out-Null
+          if($errs.Count){throw 'PowerShell monitor syntax invalid'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Windows build missing'}
+      - name: Publish compiled ZIP and regular in-app updater package
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $source='releases/AirtelMonitor-6.14.0.zip'
+          $compiled='releases/T-Net-6.14.0-Windows-compiled.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $source
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 $compiled
+          $hash=(Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.14.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.14.0.zip'
+            sha256=$hash
+            notes='Network panel only: Live speed source pinned immediately below GLOBAL, Adapter next and signal strength after Adapter; original scrolling design restored. Existing adapter and signal fonts/sizes, all monitoring code, speeds and history remain unchanged.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $source $compiled updates/stable.json
+          git commit -m 'Publish T-Net v6.14 Network source position and scrollbar'
+          git push
