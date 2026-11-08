@@ -1,0 +1,91 @@
+name: Build and test T-Net v6.11 adapter switching and Wi-Fi signal
+on:
+  push:
+    paths:
+      - '.github/workflows/v611.yml'
+      - 'release-candidate/adapter-signal-v610/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-build-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify uploaded sources match the supplied patch exactly
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          @'
+          from pathlib import Path
+          from hashlib import sha256
+          root=Path('release-candidate/adapter-signal-v610')
+          expect={
+            'monitor.ps1':'9570714f875e9ff4b103a0745f8c4699acccc4971813dc9ea9048bbcab30f6bf',
+            'AirtelMonitorNative.cs':'06f93c33099eee4b00cdf1499be3429f80fe9bfc48bcf8ccd4ce7cf4ece0fdf5'
+          }
+          for name, expected in expect.items():
+            text=(root/name).read_text(encoding='utf-8-sig').replace('\r\n','\n')
+            sha=sha256(b'\xef\xbb\xbf'+text.encode('utf-8')).hexdigest()
+            if sha!=expected:raise AssertionError(f'{name}: patch input checksum differs: {sha}')
+            print('Verified original attached file:',name)
+          '@ | python -
+          if($LASTEXITCODE -ne 0){throw 'Patch checksum validation failed'}
+      - name: Verify PowerShell parses and run simulated adapter switching tests
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $err=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('release-candidate/adapter-signal-v610/monitor.ps1',[ref]$null,[ref]$err) | Out-Null
+          if($err.Count){throw ('PowerShell parse errors: '+($err|Out-String))}
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File release-candidate/adapter-signal-v610/test_adapter_switch.ps1
+          if($LASTEXITCODE -ne 0){throw 'Mock adapter-switch tests failed'}
+      - name: Compile with the installed updater-compatible WinForms references
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Copy-Item 'release-candidate/adapter-signal-v610/monitor.ps1' work/monitor.ps1
+          $source=[IO.File]::ReadAllText('release-candidate/adapter-signal-v610/AirtelMonitorNative.cs')
+          $source=$source.Replace('const string AppVersion = "6.10.0";','const string AppVersion = "6.11.0";')
+          if(!$source.Contains('const string AppVersion = "6.11.0";')){throw 'Version bump failed'}
+          [IO.File]::WriteAllText('work/AirtelMonitorNative.cs',$source,[Text.UTF8Encoding]::new($true))
+          Add-Type -Path 'work/AirtelMonitorNative.cs' -OutputAssembly 'work/AirtelMonitorNative.exe' -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path 'work/AirtelMonitorNative.exe')){throw 'Windows executable was not created'}
+      - name: Confirm no bundled user records, stage compiled binary and update
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          foreach($item in @('usage.json','usage-timeline.csv','config.json')){
+            if(Test-Path ('work/'+$item)){throw 'User data must not be included'}
+          }
+          $notes=@'
+          T-Net 6.11.0: experimental adapter-switching and Wi-Fi signal release.
+          Compiled for Windows with .NET Framework WinForms.
+          Use T-Net's in-app Check for updates to apply to the current installation,
+          preserving the existing local usage history and user settings.
+          The existing installer/updater handles the in-place update. Do not delete
+          your existing data or replace the %LOCALAPPDATA%\AirtelDataMonitor\data folder.
+          This update was compiled and exercised using simulated Windows adapters;
+          physical Intel AX200 and Realtek RTL8188FTV switching MUST be tested
+          on the user's Windows laptop. The executable needs monitor.ps1 beside it.
+          '@
+          [IO.File]::WriteAllText('work/README-install.txt',$notes,[Text.UTF8Encoding]::new($false))
+          $sourceZip='releases/AirtelMonitor-6.11.0.zip'
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath $sourceZip -Force
+          $compiledZip='releases/T-Net-6.11.0-Windows-compiled.zip'
+          Compress-Archive -Path work/AirtelMonitorNative.exe,work/AirtelMonitorNative.cs,work/monitor.ps1,work/README-install.txt -DestinationPath $compiledZip -Force
+          $checksum=(Get-FileHash $sourceZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.11.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.11.0.zip'
+            sha256=$checksum
+            notes='Add active Wi-Fi adapter switching and Windows-reported signal percentage; counter baselines guard against switch spikes. Previous usage, timestamps, UI and all charts retained. Physical Intel/Realtek switching still requires local verification.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $sourceZip $compiledZip updates/stable.json
+          git commit -m 'Publish validated T-Net v6.11 adapter and signal release'
+          git push
