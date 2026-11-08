@@ -67,7 +67,9 @@ $connected=@(Get-ConnectedWifi)
 Check ($connected.Count -eq 1) 'one connected interface recognized'
 Check ($connected[0].name -eq 'WiFi') 'Intel interface name'
 Check ($connected[0].signal -eq 92) 'Intel reported Wi-Fi signal is 92'
+Write-Host ('Active before sample: '+((Resolve-ActiveWifi) | Out-String))
 Take-Sample
+Write-Host ('After sample: active=['+$script:ActiveAdapter+'] status=['+$script:Status+'] error=['+$script:ErrorText+'] SSID=['+$script:Sample.ssid+']')
 Check ($script:ActiveAdapter -eq 'WiFi') 'Intel adapter selected'
 Check ((Total) -eq 0) 'Intel first sample is baseline, no historical count'
 $script:stats['WiFi'].rx += 700
