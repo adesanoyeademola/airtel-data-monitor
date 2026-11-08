@@ -38,7 +38,7 @@ jobs:
           anchor='      detailScroll.AutoScrollMinSize=new Size(0,320);'
           a=restored.index(anchor)+len(anchor)
           b=restored.index('      detailScroll.Controls.Add(LabelText("Last update"));',a)
-          restored=restored[:a]+restored[b:]
+          restored=restored[:a]+'\n'+restored[b:]
           if old!=restored:
             print(''.join(list(unified_diff(old.splitlines(True),restored.splitlines(True)))[:40]))
             raise AssertionError('Unexpected non-scrollbar source differences')
