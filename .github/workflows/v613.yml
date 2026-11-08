@@ -1,0 +1,83 @@
+name: Publish T-Net v6.13 pinned Network status
+on:
+  push:
+    paths:
+      - '.github/workflows/v613.yml'
+      - 'release-candidate/patch_v613.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply targeted Network panel patch and verify source boundaries
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.12.0.zip work
+          Copy-Item work/AirtelMonitorNative.cs work/BaselineNative.cs
+          $originalEngineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          python release-candidate/patch_v613.py
+          if($LASTEXITCODE -ne 0){throw 'UI patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $originalEngineHash){throw 'Monitoring engine changed unexpectedly'}
+          @'
+          from pathlib import Path
+          from difflib import unified_diff
+          old=Path("work/BaselineNative.cs").read_text(encoding="utf-8-sig")
+          new=Path("work/AirtelMonitorNative.cs").read_text(encoding="utf-8-sig")
+          assert 'const string AppVersion = "6.12.0";' in old
+          assert 'const string AppVersion = "6.13.0";' in new
+          assert new.count('pinnedDetails.Controls.Add(speedSourceLabel);')==1
+          assert new.count('pinnedDetails.Controls.Add(adapter);')==1
+          assert new.count('pinnedDetails.Controls.Add(signalRow);')==1
+          assert new.count('detailScroll.Controls.Add(LabelText("Last update"));')==1
+          assert 'AutoScroll=true' in new
+          assert "Measured Windows Wi-Fi traffic, not Airtel SIM balance." not in new
+          a=old.index('      var layoutNetwork=new TableLayoutPanel')
+          b=old.index('      var chPanel=PanelCard();',a)
+          c=new.index('      var layoutNetwork=new TableLayoutPanel')
+          d=new.index('      var chPanel=PanelCard();',c)
+          new_restored=new[:c]+old[a:b]+new[d:]
+          new_restored=new_restored.replace('const string AppVersion = "6.13.0";','const string AppVersion = "6.12.0";')
+          if old!=new_restored:
+            print(''.join(list(unified_diff(old.splitlines(True),new_restored.splitlines(True)))[:65]))
+            raise AssertionError('A non-Network-panel feature was modified')
+          print('PASS: only Network layout, footer text and version changed')
+          '@ | Set-Content work/check_layout_only.py -Encoding UTF8
+          python work/check_layout_only.py
+          if($LASTEXITCODE -ne 0){throw 'Display-only change test failed'}
+      - name: Compile Windows executable and inspect monitoring preservation
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $err=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$err)|Out-Null
+          if($err.Count){throw 'Monitoring engine syntax failed'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Compiled executable missing'}
+          Write-Host 'PASS: compiled native WinForms executable'
+      - name: Publish normal updater package and compiled Windows ZIP
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $source='releases/AirtelMonitor-6.13.0.zip'
+          $compiled='releases/T-Net-6.13.0-Windows-compiled.zip'
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 $source
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 $compiled
+          $sha=(Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.13.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.13.0.zip'
+            sha256=$sha
+            notes='Network-panel UI only: always show live-speed source, connected adapter, and color-coded Wi-Fi signal above the remaining details scroller. Remove outdated Airtel-specific disclaimer. Unchanged speeds, adapter detection, usage logs, charts and history.'
+          }
+          [IO.File]::WriteAllText('updates/stable.json',($manifest|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $source $compiled updates/stable.json
+          git commit -m 'Publish T-Net v6.13 pinned Network metrics layout'
+          git push
