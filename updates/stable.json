@@ -1,7 +1,7 @@
 {
-    "version":  "6.12.0",
+    "version":  "6.13.0",
     "status":  "available",
-    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.12.0.zip",
-    "sha256":  "882bd02a01264b8bdd129de88f05290929f4f9e99316216a593d6b005d9464ca",
-    "notes":  "Display-only color-coded live Wi-Fi signal bar with exact Windows-reported percentage: green 80â€“100%, yellow 50â€“79%, red 0â€“49%; unavailable on disconnect. Monitoring service, adapter switching, speeds, data history, layout and charts unchanged."
+    "packageUrl":  "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.13.0.zip",
+    "sha256":  "ab055a577b4d0f4c3084b822060356d7154d97c627ed94624265108adf55f98b",
+    "notes":  "Network-panel UI only: always show live-speed source, connected adapter, and color-coded Wi-Fi signal above the remaining details scroller. Remove outdated Airtel-specific disclaimer. Unchanged speeds, adapter detection, usage logs, charts and history."
 }
