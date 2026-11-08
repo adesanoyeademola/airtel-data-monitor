@@ -65,7 +65,7 @@ helper='''    // The exact reported 0-100% WLAN signal quality is displayed dire
     }
     void UpdateSignalDisplay(string reportedSignal,bool connected){
       if(signalStrength==null || signalStrengthTrack==null || signalStrengthFill==null)return;
-      int value;
+      int value=0;
       bool valid=connected &&
         Int32.TryParse(reportedSignal,NumberStyles.Integer,CultureInfo.InvariantCulture,out value) &&
         value>=0 && value<=100;
