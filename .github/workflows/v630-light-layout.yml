@@ -1,0 +1,73 @@
+name: Verify T-Net v6.30 final Nordic release
+on:
+  push:
+    branches: [fix/nordic-layout-light-v630]
+    paths:
+      - '.github/workflows/v630-final-nordic.yml'
+      - 'release-candidate/patch_v630.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Nordic base and preserve existing engine
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.29.0.zip work
+          $engine=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          python release-candidate/patch_v630.py
+          if($LASTEXITCODE -ne 0){throw 'v6.30 patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engine){
+            throw 'Windows monitoring engine was changed'
+          }
+          @'
+          from pathlib import Path
+          a=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          b=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for q in ('TrackUsageCheckpoint(', 'UpdateSignalTrayState(',
+                    'new VScrollBar{', 'downloadSpeed.Text=Rate(rateRx)',
+                    'uploadSpeed.Text=Rate(rateTx)',
+                    'MonthTotalFromExistingDays(d)',
+                    'chartViewDropdown.Items.AddRange'):
+              assert q in a and q in b,q
+          for q in ('const string AppVersion = "6.30.0";',
+                    'middle.Controls.Add(metrics,0,0);',
+                    'middle.Controls.Add(chPanel,0,1);',
+                    'middle.SetRowSpan(networkDock,2);',
+                    'middle.Controls.Add(networkDock,1,0);',
+                    'headerActions.Controls.SetChildIndex(updateButton,0);',
+                    'nordicSignalMetric=Metric(metrics,"Wi-Fi signal",2);'):
+              assert q in b,q
+          assert 'outer.Controls.Add(metrics,0,1);' not in b
+          assert 'middle.Controls.Add(chPanel,0,0);' not in b
+          print('PASS: layout restructured, old monitoring source unchanged')
+          '@ | Set-Content work/check_v630.py -Encoding UTF8
+          python work/check_v630.py
+          if($LASTEXITCODE -ne 0){throw 'Regression assertions failed'}
+      - name: Compile native Windows Forms dashboard
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count){throw 'PowerShell monitor syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Windows native build missing'}
+      - name: Make preview package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath work/AirtelMonitor-6.30.0-preview.zip
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1,work/AirtelDataMonitor.exe -DestinationPath work/T-Net-6.30.0-Windows-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v630-reference-option2-preview
+          path: |
+            work/AirtelMonitor-6.30.0-preview.zip
+            work/T-Net-6.30.0-Windows-preview.zip
+          retention-days: 10
