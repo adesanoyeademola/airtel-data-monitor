@@ -310,7 +310,7 @@ namespace AirtelMonitorNative {
       nordicNetworkPanel=net;
       var layoutNetwork=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,Margin=new Padding(0)};
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,32));
-      layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,76));
+      layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,74));
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Percent,100));
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,0));
       var networkTitle=LabelText("Network",18,true);
@@ -330,10 +330,11 @@ namespace AirtelMonitorNative {
       networkHeader.Controls.Add(networkTitle,0,0);
       networkHeader.Controls.Add(sampleAgeLabel,1,0);
       layoutNetwork.Controls.Add(networkHeader,0,0);
-      var hotspotHeader=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Margin=new Padding(0)};
-      hotspotHeader.RowStyles.Add(new RowStyle(SizeType.Absolute,25));
+      var hotspotHeader=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=2,Margin=new Padding(0)};
+      hotspotHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
+      hotspotHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));
+      hotspotHeader.RowStyles.Add(new RowStyle(SizeType.Absolute,39));
       hotspotHeader.RowStyles.Add(new RowStyle(SizeType.Absolute,34));
-      hotspotHeader.RowStyles.Add(new RowStyle(SizeType.Absolute,27));
       var hotspotCaption=LabelText("Hotspot");
       hotspotCaption.Dock=DockStyle.Fill;
       hotspotCaption.Margin=new Padding(0);
@@ -344,26 +345,26 @@ namespace AirtelMonitorNative {
       wifi=LabelText("—",12,true);wifi.AutoEllipsis=true;wifi.AutoSize=false;wifi.Dock=DockStyle.Fill;
       wifi.Margin=new Padding(0);
       wifi.Padding=new Padding(0);
-      hotspotHeader.Controls.Add(wifi,0,1);layoutNetwork.Controls.Add(hotspotHeader,0,1);
+      hotspotHeader.Controls.Add(wifi,1,0);layoutNetwork.Controls.Add(hotspotHeader,0,1);
       // Pinned directly after the GLOBAL hotspot, immediately before Adapter.
       speedSourceLabel=new Label{
         Text="Live speed source: checking...",AutoSize=true,ForeColor=muted,
         Font=new Font("Segoe UI",9),Margin=new Padding(0,0,0,2)
       };
-      hotspotHeader.Controls.Add(speedSourceLabel,0,2);
+      hotspotHeader.Controls.Add(speedSourceLabel,0,1);hotspotHeader.SetColumnSpan(speedSourceLabel,2);
       // Keep the three essential live network readings permanently visible.
       // Only the lower, optional details remain in the original scroll area.
       var pinnedDetails=new TableLayoutPanel{
-        Dock=DockStyle.Fill,ColumnCount=1,RowCount=6,
+        Dock=DockStyle.Fill,ColumnCount=2,RowCount=5,
         AutoScroll=false,Margin=new Padding(0),Padding=new Padding(0),
         GrowStyle=TableLayoutPanelGrowStyle.FixedSize
       };
-      pinnedDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,23)); // Adapter label
-      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,28)); // Adapter value
-      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,24)); // Signal label
-      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,40)); // Pulse and percentage
-      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,32)); // Last update dropdown
+      pinnedDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
+      pinnedDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));
+      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,43)); // Adapter and its value
+      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,29)); // Signal label
+      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,51)); // Pulse and percentage
+      pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,40)); // Last update dropdown
       pinnedDetails.RowStyles.Add(new RowStyle(SizeType.Absolute,0));  // Expanded timestamp
       var adapterCaption=LabelText("Adapter",11);
       adapterCaption.Margin=new Padding(0,1,0,1);
@@ -371,11 +372,11 @@ namespace AirtelMonitorNative {
       pinnedDetails.Controls.Add(adapterCaption,0,0);
       adapter=LabelText("—",13,true);adapter.Margin=new Padding(0);
       adapter.Dock=DockStyle.Fill;
-      pinnedDetails.Controls.Add(adapter,0,1);
+      pinnedDetails.Controls.Add(adapter,1,0);
       var signalCaption=LabelText("Wi-Fi signal strength",11);
       signalCaption.Margin=new Padding(0,0,0,2);
       signalCaption.Dock=DockStyle.Fill;
-      pinnedDetails.Controls.Add(signalCaption,0,2);
+      pinnedDetails.Controls.Add(signalCaption,0,1);pinnedDetails.SetColumnSpan(signalCaption,2);
       // A thin, color-coded Wi-Fi quality line. The percentage still comes
       // exclusively from Windows via the existing monitor.ps1 API.
       var signalRow=new FlowLayoutPanel{
@@ -420,7 +421,7 @@ namespace AirtelMonitorNative {
       signalStrength.Height=32;
       signalRow.Dock=DockStyle.Fill;
       signalRow.AutoScroll=false;
-      pinnedDetails.Controls.Add(signalRow,0,3);
+      pinnedDetails.Controls.Add(signalRow,0,2);pinnedDetails.SetColumnSpan(signalRow,2);
       layoutNetwork.Controls.Add(pinnedDetails,0,2);
       pinnedDetails.BringToFront();
       // Keep the scroll area intact for timestamp and further details.
@@ -484,7 +485,7 @@ namespace AirtelMonitorNative {
       last.Width=224;last.Height=27;last.Visible=false;
       lastUpdateDisclosure.Click+=(sender,e)=>{
         last.Visible=!last.Visible;
-        pinnedDetails.RowStyles[5].Height=last.Visible?27:0;
+        pinnedDetails.RowStyles[4].Height=last.Visible?34:0;
         lastUpdateDisclosure.Text=last.Visible?"▾ Last update":"▸ Last update";
         pinnedDetails.PerformLayout();
         pinnedDetails.Invalidate(true);
@@ -495,8 +496,10 @@ namespace AirtelMonitorNative {
       lastUpdateDisclosure.TabStop=true;
       last.Dock=DockStyle.Fill;
       last.Margin=new Padding(0);
-      pinnedDetails.Controls.Add(lastUpdateDisclosure,0,4);
-      pinnedDetails.Controls.Add(last,0,5);
+      pinnedDetails.Controls.Add(lastUpdateDisclosure,0,3);
+      pinnedDetails.SetColumnSpan(lastUpdateDisclosure,2);
+      pinnedDetails.Controls.Add(last,0,4);
+      pinnedDetails.SetColumnSpan(last,2);
       // Redundant "Scroll for more details" label removed; keep the real scrollbar.
       layoutNetwork.Controls.Add(detailViewport,0,3);
       net.Controls.Add(layoutNetwork);
