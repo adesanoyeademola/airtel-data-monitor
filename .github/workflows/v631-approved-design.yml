@@ -2,8 +2,10 @@ name: Review T-Net v6.31 approved dark design
 # Re-render the polished sidebar and Appearance control.
 on:
   push:
-    branches: [fix/approved-dark-layout-light-v631]
-    paths: [.github/workflows/v631-running-window.yml]
+    branches: [design/approved-dark-dashboard-v631]
+    paths:
+      - '.github/workflows/v631-approved-design.yml'
+      - 'design/approved-dark-v631.cs'
 permissions:
   contents: write
 jobs:
@@ -83,4 +85,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add design-reviews/approved-dark-v631-actual.png design-reviews/approved-dark-v631-actual-base64.txt
           git commit -m 'Capture running Approved dark v6.31 Windows UI for comparison'
-          git push origin HEAD:fix/approved-dark-layout-light-v631
+          git push origin HEAD:design/approved-dark-dashboard-v631
