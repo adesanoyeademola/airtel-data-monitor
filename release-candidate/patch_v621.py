@@ -65,11 +65,15 @@ one('    Label HeaderSpeedMetric(TableLayoutPanel parent,string name,int col,Col
     }
     Label HeaderSpeedMetric(TableLayoutPanel parent,string name,int col,Color highlight){''')
 
+# Declare the captured spacer before syncDetails; initialize it in the details area.
+one('''      Action syncDetails=()=>{''','''      Panel detailsRevealSpacer=null;
+      Action syncDetails=()=>{''')
+
 # Scroll-only information: the native scrollbar still operates normally.
 one('''      detailScroll.Controls.Add(LabelText("Last update"));''',
 '''      // This spacer is relative to the view height, so optional details
       // remain below the fold even when the window is maximized.
-      var detailsRevealSpacer=new Panel{Width=1,Height=320,Margin=new Padding(0),
+      detailsRevealSpacer=new Panel{Width=1,Height=320,Margin=new Padding(0),
         BackColor=Color.Transparent,Tag="tnet-detail-fold"};
       detailScroll.Controls.Add(detailsRevealSpacer);
       detailScroll.Controls.Add(LabelText("Last update"));''')
@@ -78,7 +82,7 @@ one('''        detailScroll.Width=viewportWidth;
         detailScroll.PerformLayout();''',
 '''        detailScroll.Width=viewportWidth;
         detailScroll.Height=320;
-        detailsRevealSpacer.Height=viewportHeight+12;
+        if(detailsRevealSpacer!=null)detailsRevealSpacer.Height=viewportHeight+12;
         detailScroll.PerformLayout();''')
 
 # Chart buttons: one row for Live speed and Usage log, a second for three
@@ -229,7 +233,7 @@ one('''      if(button!=null && button!=null && button!=null){''','''      if(bu
 for value in ['const string AppVersion = "6.21.0";','new VScrollBar{',
               'signalTrayPopup.Deactivate+=','TrackUsageCheckpoint(',
               'downloadSpeed.Text=Rate(rateRx)','uploadSpeed.Text=Rate(rateTx)',
-              'MonthTotalFromExistingDays(d)','detailsRevealSpacer.Height=viewportHeight+12;',
+              'MonthTotalFromExistingDays(d)','if(detailsRevealSpacer!=null)detailsRevealSpacer.Height=viewportHeight+12;',
               'CompactSpeedPill(headerActions,"↓"','CompactSpeedPill(headerActions,"↑"',
               'Status','Weekly usage','Monthly usage','void RenderUsagePeriod()',
               'void CheckSystemAppearance()']:
