@@ -98,10 +98,9 @@ namespace AirtelMonitorNative {
             else SetGraphView(currentUsageView);
             break;
           case "navigate":
-            if(value=="Usage")SetGraphView(currentUsageView);
-            else if(value=="History")SetGraphView(2);
-            else if(value=="Settings")ShowAppearanceMenu();
-            // Network/Dashboard are already visible in the approved layout.
+            // Sidebar pages are owned by the approved WebView2 presentation.
+            // Do not open native dialogs or switch hidden native chart modes.
+            // The original monitor continues collecting in every section.
             break;
         }
       }catch(Exception ex){
