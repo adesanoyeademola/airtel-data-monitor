@@ -1,7 +1,7 @@
 {
-  "version": "6.23.0",
+  "version": "6.24.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.23.0.zip",
-  "sha256": "3c67d3b6faaeeedf1b2a12c901bef348761516e225e1a74c04ae6a06d28beb10",
-  "notes": "Layout refinements: animated live speed arrows moved from header into Download speed and Upload speed cards; Appearance appears before Check for updates, with an always-readable update button; Daily/Weekly/Monthly charts stay together; Live speed and Usage log selected from the dropdown in chart footer; Last update becomes a collapsible disclosure within existing Network scrollbar; larger network headings. Existing monitoring and data preserved."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.24.0.zip",
+  "sha256": "84cc7588ee999f9bbd8f407382d8bf849a28a6aa0e0613250d0254ac2f2a774a",
+  "notes": "Network card refinement: remove artificial unused lower space; expand adapter and Wi-Fi signal presentation with taller ECG visualization; retain the Windows-reported signal percentage; visible scrollbar remains as an inactive design element; Last update arrow expands the timestamp immediately beneath it. Existing data, themes, chart controls, and live monitoring remain unchanged."
 }
