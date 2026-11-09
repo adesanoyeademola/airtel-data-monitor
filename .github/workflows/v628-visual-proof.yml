@@ -28,16 +28,18 @@ jobs:
           $form=$asm.GetType('AirtelMonitorNative.MainForm').GetConstructor([Type[]]@([bool])).Invoke(@($false))
           try{
             $form.Size=[System.Drawing.Size]::new(1420,800)
-            $form.CreateControl()
+            $form.Show()
+            [System.Windows.Forms.Application]::DoEvents()
             $form.PerformLayout()
-            foreach($child in $form.Controls){$child.PerformLayout()}
+            foreach($child in $form.Controls){$child.PerformLayout();$child.Refresh()}
+            [System.Windows.Forms.Application]::DoEvents()
             $bmp=New-Object System.Drawing.Bitmap(1420,800)
             $rect=[System.Drawing.Rectangle]::new(0,0,1420,800)
             $form.DrawToBitmap($bmp,$rect)
             New-Item -ItemType Directory design-reviews -Force | Out-Null
             $bmp.Save((Join-Path (Get-Location) 'design-reviews/nordic-v628-winform.png'),[System.Drawing.Imaging.ImageFormat]::Png)
             $bmp.Dispose()
-          }finally{$form.Dispose()}
+          }finally{$form.Close();$form.Dispose()}
       - name: Save visual proof on design branch
         shell: pwsh
         run: |
