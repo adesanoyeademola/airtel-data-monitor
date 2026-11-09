@@ -73,13 +73,17 @@ one('''        if(down!=null)down.Text=downloadSpeed.Text;
         if(up!=null)up.Text=uploadSpeed.Text;''','''        // The metric cards already show the unavailable speed state.''')
 
 # Proper visual LTR sequence is Appearance -> Check for updates -> Monitoring live.
+one('''      headerActions.Controls.Add(statusLine);''',
+'''      headerActions.Controls.Add(statusLine);
+      // Right-to-left layout: Appearance, then updates, then status.
+      headerActions.Controls.SetChildIndex(statusLine,0);
+      headerActions.Controls.SetChildIndex(updateButton,1);
+      headerActions.Controls.SetChildIndex(appearanceButton,2);''')
+
 # FlowLayoutPanel is RightToLeft, so its child ordering is the reverse.
 one('''      headerActions.Controls.Add(appearanceButton);
       ShapeAppearanceButton();''',
 '''      headerActions.Controls.Add(appearanceButton);
-      headerActions.Controls.SetChildIndex(statusLine,0);
-      headerActions.Controls.SetChildIndex(updateButton,1);
-      headerActions.Controls.SetChildIndex(appearanceButton,2);
       // Keep the update action visually readable even while checking.
       updateButton.BackColor=Color.FromArgb(38,57,81);
       updateButton.ForeColor=Color.White;
