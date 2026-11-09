@@ -55,6 +55,20 @@ namespace AirtelMonitorNative {
                 await approvedDashboard.CoreWebView2.CapturePreviewAsync(
                   CoreWebView2CapturePreviewImageFormat.Png,output);
               }
+              // Capture every page in the same actual embedded Windows UI.
+              // No simulated network measurements are inserted.
+              string folder=Path.GetDirectoryName(screenshot);
+              foreach(string page in new[]{"Usage","Network","History","Settings","Dashboard"}){
+                string escaped=json.Serialize(page);
+                await approvedDashboard.CoreWebView2.ExecuteScriptAsync(
+                  "window.TNetShowPage("+escaped+");");
+                await System.Threading.Tasks.Task.Delay(250);
+                string pagePath=Path.Combine(folder,"approved-page-"+page.ToLowerInvariant()+".png");
+                using(var output=File.Create(pagePath)){
+                  await approvedDashboard.CoreWebView2.CapturePreviewAsync(
+                    CoreWebView2CapturePreviewImageFormat.Png,output);
+                }
+              }
             }catch(Exception ex){
               System.Diagnostics.Debug.WriteLine("Design QA screenshot failed: "+ex.Message);
             }
