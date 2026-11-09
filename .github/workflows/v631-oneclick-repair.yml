@@ -101,7 +101,7 @@ jobs:
             if($LASTEXITCODE -ne 0){throw "JavaScript validation failed for script $i"}
           }
       - name: Assemble pinned repair payload and compile native one-click installer
-        shell: pwsh
+        shell: powershell
         working-directory: source
         run: |
           $ErrorActionPreference='Stop'
