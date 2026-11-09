@@ -44,7 +44,7 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           New-Item -ItemType Directory work -Force | Out-Null
-          Expand-Archive ../publisher/releases/AirtelMonitor-6.27.0.zip work
+          Expand-Archive ../publisher/releases/AirtelMonitor-6.29.0.zip work
           $original=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
           Copy-Item work/AirtelMonitorNative.cs work/Original.cs
           foreach($patch in @('patch_v630.py')){
