@@ -8,6 +8,9 @@ def one(a,b):
     s=s.replace(a,b)
 
 one('const string AppVersion = "6.26.0";','const string AppVersion = "6.27.0";')
+# New installs use Nordic Light while saved preferences are respected.
+one('''    string appearanceMode="dark";''','''    string appearanceMode="light";''')
+
 
 # Nordic Canvas keeps light / dark / Windows-auto functionality but uses
 # the segmented sun, moon, and Auto selector chosen in Application Desk.
@@ -76,6 +79,12 @@ one('''      headerActions.Controls.Add(appearanceButton);
       // Keep the update action visually readable even while checking.''')
 one('''      headerActions.Controls.SetChildIndex(appearanceButton,2);''',
     '''      headerActions.Controls.SetChildIndex(nordicAppearanceStrip,2);''')
+
+one('''        name=="Download speed"?Color.FromArgb(66,149,220):
+        name=="Upload speed"?Color.FromArgb(45,168,127):''',
+'''        name=="Download speed"?Color.FromArgb(66,149,220):
+        name=="Upload speed"?Color.FromArgb(45,168,127):
+        name=="Wi-Fi signal"?Color.FromArgb(33,167,135):''')
 
 # Use four balanced top statistics cards including the real signal percentage.
 one('''      var metrics=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=3};
