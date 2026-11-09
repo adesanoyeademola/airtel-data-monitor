@@ -1771,6 +1771,28 @@ namespace AirtelMonitorNative {
         if(!Version.TryParse(version,out newest)||!Version.TryParse(AppVersion,out current))throw new Exception("Invalid version.");
         if(newest<=current){if(!silent)MessageBox.Show("You're up to date (v"+AppVersion+").","Updates");return;}
         if(MessageBox.Show("Version "+version+" is available. Download and install it now?\nThe app will restart and your data will be kept.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+        // Future full releases can supply a verified one-click installer.
+        // Unlike the legacy source-only updater, this can carry WebView2 files.
+        if(d.ContainsKey("installerUrl") && d.ContainsKey("installerSha256")){
+          string installerUrl=Str(d,"installerUrl"),installerSha=Str(d,"installerSha256").ToLowerInvariant();
+          if(!installerUrl.StartsWith("https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/",StringComparison.Ordinal)
+             || !System.Text.RegularExpressions.Regex.IsMatch(installerSha,"^[0-9a-f]{64}$"))
+            throw new Exception("Installer manifest failed verification.");
+          string installerPath=Path.Combine(Path.GetTempPath(),"TNet-Upgrade-"+version+".exe");
+          await Task.Run(()=>{
+            using(var wc=new WebClient()){
+              wc.Headers[HttpRequestHeader.UserAgent]="T-Net/6.31.1";
+              wc.DownloadFile(installerUrl,installerPath);
+            }
+            using(var file=File.OpenRead(installerPath))using(var h=SHA256.Create()){
+              string actual=BitConverter.ToString(h.ComputeHash(file)).Replace("-","").ToLowerInvariant();
+              if(actual!=installerSha)throw new Exception("Installer checksum mismatch; update rejected.");
+            }
+          });
+          Process.Start(new ProcessStartInfo(installerPath){UseShellExecute=true});
+          Quit();
+          return;
+        }
         string temp=Path.Combine(Path.GetTempPath(),"AirtelMonitor-"+version+".zip");
         await Task.Run(()=>{
           using(var wc=new WebClient()){wc.Headers[HttpRequestHeader.UserAgent]="AirtelDataMonitor/5";wc.DownloadFile(packageUrl,temp);}
