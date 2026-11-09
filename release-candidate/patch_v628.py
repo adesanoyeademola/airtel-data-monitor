@@ -246,6 +246,35 @@ one('''      updateButton.Font=new Font("Segoe UI",9,FontStyle.Regular);
       ShapeAppearanceButton();''')
 
 
+
+# Reference design is composed for a wide Windows desktop screen; previous
+# v6.27 inherited an overly small 1000px window that crushed both columns.
+one('''MinimumSize = new Size(785, 660); Size = new Size(1000, 780);''',
+    '''MinimumSize = new Size(1030, 670); Size = new Size(1320, 790);''')
+# Show meaningful empty-chart status when daily data has not yet arrived,
+# rather than fabricating example measurements.
+one('''      chart.ChartAreas.Add(area);''',
+'''      chart.ChartAreas.Add(area);
+      var nordicEmptyState=new Label{
+        Text="Usage history will appear here once monitoring records traffic",
+        Dock=DockStyle.Fill,Visible=false,
+        ForeColor=muted,TextAlign=ContentAlignment.MiddleCenter,
+        Font=new Font("Segoe UI",10),
+        BackColor=Color.Transparent,Tag="nordic-empty-usage"
+      };
+      chart.Tag=nordicEmptyState;''')
+one('''      graphSurface.Controls.Add(usageGrid);''',
+'''      graphSurface.Controls.Add(usageGrid);
+      var emptyState=chart.Tag as Label;
+      if(emptyState!=null){
+        graphSurface.Controls.Add(emptyState);
+        emptyState.BringToFront();
+      }''')
+one('''      if(chart==null)return;
+      var pts=chart.Series[0].Points;''',
+'''      if(chart==null)return;
+      var pts=chart.Series[0].Points;''')
+
 # FINAL VISUAL-PARITY PASS: Option 02's top speed tiles are softly elevated,
 # the network panel reads as a compact inspection card, and no-data charts
 # must not look like a broken white rectangle.
