@@ -251,52 +251,6 @@ one('''      updateButton.Font=new Font("Segoe UI",9,FontStyle.Regular);
 # v6.27 inherited an overly small 1000px window that crushed both columns.
 one('''MinimumSize = new Size(785, 660); Size = new Size(1000, 780);''',
     '''MinimumSize = new Size(1030, 670); Size = new Size(1320, 790);''')
-# Show meaningful empty-chart status when daily data has not yet arrived,
-# rather than fabricating example measurements.
-one('''      chart.ChartAreas.Add(area);''',
-'''      chart.ChartAreas.Add(area);
-      var nordicEmptyState=new Label{
-        Text="Usage history will appear here once monitoring records traffic",
-        Dock=DockStyle.Fill,Visible=false,
-        ForeColor=muted,TextAlign=ContentAlignment.MiddleCenter,
-        Font=new Font("Segoe UI",10),
-        BackColor=Color.Transparent,Tag="nordic-empty-usage"
-      };
-      chart.Tag=nordicEmptyState;''')
-one('''      graphSurface.Controls.Add(usageGrid);''',
-'''      graphSurface.Controls.Add(usageGrid);
-      var emptyState=chart.Tag as Label;
-      if(emptyState!=null){
-        graphSurface.Controls.Add(emptyState);
-        emptyState.BringToFront();
-      }''')
-one('''      if(chart==null)return;
-      var pts=chart.Series[0].Points;''',
-'''      if(chart==null)return;
-      var pts=chart.Series[0].Points;''')
-
-
-# Show the no-history state only for empty real data in the chosen period;
-# never fabricate chart bars from example metrics.
-one('''      }
-    }
-    void SetGraphView(int view){''',
-'''      }
-      var empty=chart.Tag as Label;
-      if(empty!=null){
-        bool noReadings=pts.Count==0 || pts.Cast<DataPoint>().All(point=>point.YValues[0]<=0);
-        empty.Visible=noReadings&&!showLiveChart&&!showUsageLog;
-        if(empty.Visible)empty.BringToFront();
-      }
-    }
-    void SetGraphView(int view){''')
-one('''      if(showLiveChart)RenderLiveSpeedGraph();
-      else if(!showUsageLog)RenderUsagePeriod();''',
-'''      var empty=chart.Tag as Label;
-      if(empty!=null)empty.Visible=false;
-      if(showLiveChart)RenderLiveSpeedGraph();
-      else if(!showUsageLog)RenderUsagePeriod();''')
-
 # FINAL VISUAL-PARITY PASS: Option 02's top speed tiles are softly elevated,
 # the network panel reads as a compact inspection card, and no-data charts
 # must not look like a broken white rectangle.
