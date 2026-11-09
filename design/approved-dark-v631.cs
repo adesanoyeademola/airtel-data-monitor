@@ -61,7 +61,7 @@ namespace AirtelMonitorNative {
     bool nativeCounterAvailable=false;
     DateTime nativeRetryUtc=DateTime.MinValue;
     bool checkingUpdates = false;
-    const string AppVersion = "6.31.0";
+    const string AppVersion = "6.31.1";
     Button updateButton;
     const string UpdatesFileName = "updates.txt";
     TextBox hotspot;
