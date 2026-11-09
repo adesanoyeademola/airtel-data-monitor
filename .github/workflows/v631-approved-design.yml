@@ -1,0 +1,86 @@
+name: Review T-Net v6.31 approved dark design
+# Re-render the polished sidebar and Appearance control.
+on:
+  push:
+    branches: [fix/approved-dark-layout-light-v631]
+    paths: [.github/workflows/v631-running-window.yml]
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile UI and verify unchanged monitoring source
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.30.0.zip work
+          $engineBefore=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item design/approved-dark-v631.cs work/AirtelMonitorNative.cs -Force
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineBefore){throw 'Monitoring engine changed'}
+          $source=Get-Content work/AirtelMonitorNative.cs -Raw
+          foreach($token in @('const string AppVersion = "6.31.0";','UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");','TrackUsageCheckpoint(','downloadSpeed.Text=Rate(rateRx)','uploadSpeed.Text=Rate(rateTx)','MonthTotalFromExistingDays(d)','chartViewDropdown.Items.AddRange')){
+            if(!$source.Contains($token)){throw "Data preservation check failed: $token"}
+          }
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+      - name: Capture real running application via PrintWindow
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          Add-Type -AssemblyName System.Drawing
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public class WindowCapture {
+            [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
+            [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int mode);
+            [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+          }
+          '@
+          $app=Start-Process -FilePath (Resolve-Path work/AirtelDataMonitor.exe) -WorkingDirectory (Resolve-Path work) -PassThru
+          try{
+            $hwnd=[IntPtr]::Zero
+            for($i=0;$i -lt 18;$i++){
+              Start-Sleep -Milliseconds 400
+              $app.Refresh()
+              if($app.HasExited){throw 'T-Net exited before render'}
+              $hwnd=$app.MainWindowHandle
+              if($hwnd -ne [IntPtr]::Zero){break}
+            }
+            if($hwnd -eq [IntPtr]::Zero){throw 'Running window not found'}
+            [WindowCapture]::SetWindowPos($hwnd,[IntPtr]::Zero,0,0,1600,900,0x40) | Out-Null
+            Start-Sleep -Milliseconds 1200
+            $bmp=New-Object System.Drawing.Bitmap(1600,900)
+            try{
+              $g=[System.Drawing.Graphics]::FromImage($bmp)
+              try{
+                $rendered=[WindowCapture]::PrintWindow($hwnd,$g.GetHdc(),2)
+                $g.ReleaseHdc()
+                if(!$rendered){throw 'PrintWindow capture returned failure'}
+              }finally{$g.Dispose()}
+              New-Item -ItemType Directory design-reviews -Force | Out-Null
+              $bmp.Save('design-reviews/approved-dark-v631-actual.png',[System.Drawing.Imaging.ImageFormat]::Png)
+              $small=New-Object System.Drawing.Bitmap(1120,630)
+              try{
+                $gs=[System.Drawing.Graphics]::FromImage($small)
+                try{$gs.DrawImage($bmp,0,0,1120,630)}finally{$gs.Dispose()}
+                $ms=New-Object System.IO.MemoryStream
+                try{
+                  $small.Save($ms,[System.Drawing.Imaging.ImageFormat]::Jpeg)
+                  [IO.File]::WriteAllText('design-reviews/approved-dark-v631-actual-base64.txt',[Convert]::ToBase64String($ms.ToArray()),[Text.Encoding]::ASCII)
+                }finally{$ms.Dispose()}
+              }finally{$small.Dispose()}
+            }finally{$bmp.Dispose()}
+          }finally{
+            if(!$app.HasExited){Stop-Process -Id $app.Id -Force}
+          }
+      - name: Commit screenshot for UI review
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add design-reviews/approved-dark-v631-actual.png design-reviews/approved-dark-v631-actual-base64.txt
+          git commit -m 'Capture running Approved dark v6.31 Windows UI for comparison'
+          git push origin HEAD:fix/approved-dark-layout-light-v631
