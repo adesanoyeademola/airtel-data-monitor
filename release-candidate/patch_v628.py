@@ -81,14 +81,28 @@ one('''      var middle=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,
       middle.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,36));''',
 '''      var middle=new TableLayoutPanel{Dock=DockStyle.Fill,
         ColumnCount=2,RowCount=2,Margin=new Padding(0),Padding=new Padding(0)};
-      middle.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,73));
-      middle.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,27));
+      middle.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));
+      middle.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
       middle.RowStyles.Add(new RowStyle(SizeType.Absolute,112));
       middle.RowStyles.Add(new RowStyle(SizeType.Percent,100));
       middle.Controls.Add(metrics,0,0);''')
 one('''      middle.Controls.Add(net,1,0);''',
 '''      middle.Controls.Add(net,1,0);
       middle.SetRowSpan(net,2);''')
+# Narrow windows must not clip the signal readout inside the right card.
+one('''      signalRow.Controls.Add(signalStrengthTrack);
+      signalRow.Controls.Add(signalStrength);''',
+'''      signalRow.Controls.Add(signalStrengthTrack);
+      signalRow.Controls.Add(signalStrength);
+      Action fitNordicSignal=()=>{
+        if(net==null || signalStrengthTrack==null)return;
+        int usable=Math.Max(90,net.ClientSize.Width-net.Padding.Horizontal-90);
+        signalStrengthTrack.Width=Math.Min(210,usable);
+        signalRow.Width=Math.Max(175,signalStrengthTrack.Width+84);
+      };
+      net.SizeChanged+=(sender,e)=>fitNordicSignal();
+      fitNordicSignal();''')
+
 one('''      chPanel.Controls.Add(graphLayout);middle.Controls.Add(chPanel,0,0);''',
     '''      chPanel.Controls.Add(graphLayout);middle.Controls.Add(chPanel,0,1);''')
 one('''      outer.Controls.Add(middle,0,3);''',
