@@ -52,7 +52,7 @@ namespace AirtelMonitorNative {
         System.Diagnostics.Debug.WriteLine("Modern UI unavailable: "+ex.Message);
       }
     }
-    void ApprovedMessage(object sender,CoreWebView2WebMessageReceivedEventArgs e){
+    async void ApprovedMessage(object sender,CoreWebView2WebMessageReceivedEventArgs e){
       try {
         // Only the app's own local HTML is used. Enforce a small allowlist.
         string message=e.TryGetWebMessageAsString();
@@ -64,7 +64,7 @@ namespace AirtelMonitorNative {
             PostApprovedTheme();
             if(lastApprovedSample!=null)PushApprovedTelemetry(lastApprovedSample,true);
             break;
-          case "checkUpdates": CheckUpdates(false); break;
+          case "checkUpdates": await CheckUpdates(false); break;
           case "appearance":
             if(value=="light"||value=="dark"||value=="system")
               SelectAppearance(value);
