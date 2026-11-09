@@ -183,16 +183,10 @@ namespace AirtelMonitorNative {
       card.Paint+=(sender,e)=>{
         if(card.Width<5||card.Height<5)return;
         e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
-        using(var path=RoundedPath(new Rectangle(1,1,card.Width-3,card.Height-3),20)){
-          using(var brush=new LinearGradientBrush(
-            new Rectangle(0,0,Math.Max(1,card.Width),Math.Max(1,card.Height)),
-            appearanceIsLight?Color.White:Color.FromArgb(28,55,95),
-            appearanceIsLight?Color.FromArgb(249,252,255):Color.FromArgb(17,35,64),62f))
-            e.Graphics.FillPath(brush,path);
-          using(var pen=new Pen(appearanceIsLight?
-            Color.FromArgb(219,230,247):Color.FromArgb(49,85,137),1.1f))
-            e.Graphics.DrawPath(pen,path);
-        }
+        using(var path=RoundedPath(new Rectangle(1,1,card.Width-3,card.Height-3),20))
+        using(var pen=new Pen(appearanceIsLight?
+          Color.FromArgb(219,230,247):Color.FromArgb(49,85,137),1.1f))
+          e.Graphics.DrawPath(pen,path);
       };
       return card;
     }
@@ -2022,6 +2016,8 @@ namespace AirtelMonitorNative {
       StyleSelectedUsagePeriod();
       StyleNordicShell(useLight);
       StyleApprovedVisuals(this,useLight);
+      if(signalStrengthTrack!=null)
+        signalStrengthTrack.BackColor=useLight?Color.FromArgb(219,232,249):Color.FromArgb(29,55,88);
       if(chart!=null && chart.Series.Count>0){
         chart.Series[0].Color=useLight?Color.FromArgb(57,132,241):Color.FromArgb(12,143,255);
         chart.Series[0].BackGradientStyle=GradientStyle.TopBottom;
