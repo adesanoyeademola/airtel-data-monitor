@@ -95,8 +95,8 @@ namespace TNetRepair {
         try{
           foreach(string name in Files){
             string target=Path.Combine(root,name);
+            touched.Add(name); // Also recover from a partial failed copy.
             File.Copy(Path.Combine(stage,name),target,true);
-            touched.Add(name);
           }
         }catch(Exception ex){
           var failures=new List<string>();
