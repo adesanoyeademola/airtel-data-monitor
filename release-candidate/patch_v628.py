@@ -275,6 +275,28 @@ one('''      if(chart==null)return;
 '''      if(chart==null)return;
       var pts=chart.Series[0].Points;''')
 
+
+# Show the no-history state only for empty real data in the chosen period;
+# never fabricate chart bars from example metrics.
+one('''      }
+    }
+    void SetGraphView(int view){''',
+'''      }
+      var empty=chart.Tag as Label;
+      if(empty!=null){
+        bool noReadings=pts.Count==0 || pts.Cast<DataPoint>().All(point=>point.YValues[0]<=0);
+        empty.Visible=noReadings&&!showLiveChart&&!showUsageLog;
+        if(empty.Visible)empty.BringToFront();
+      }
+    }
+    void SetGraphView(int view){''')
+one('''      if(showLiveChart)RenderLiveSpeedGraph();
+      else if(!showUsageLog)RenderUsagePeriod();''',
+'''      var empty=chart.Tag as Label;
+      if(empty!=null)empty.Visible=false;
+      if(showLiveChart)RenderLiveSpeedGraph();
+      else if(!showUsageLog)RenderUsagePeriod();''')
+
 # FINAL VISUAL-PARITY PASS: Option 02's top speed tiles are softly elevated,
 # the network panel reads as a compact inspection card, and no-data charts
 # must not look like a broken white rectangle.
