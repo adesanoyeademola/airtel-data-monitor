@@ -1,0 +1,143 @@
+name: Release T-Net v6.26 consolidated update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v626.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: airtel-release
+  cancel-in-progress: false
+jobs:
+  validate-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout stable publication branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: publisher
+          persist-credentials: true
+      - name: Checkout reviewed v6.26 source at immutable commit
+        uses: actions/checkout@v4
+        with:
+          repository: adesanoyeademola/airtel-data-monitor
+          ref: e04f5b1b77bff6fdd85ad75bf3b03606035de3b0
+          path: feature
+          persist-credentials: false
+      - name: Verify existing stable version before release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $m=Get-Content publisher/updates/stable.json -Raw | ConvertFrom-Json
+          if($m.version -ne '6.25.0' -and $m.version -ne '6.26.0'){
+            throw "Unexpected current stable $($m.version); release cancelled"
+          }
+          if(!(Test-Path publisher/releases/AirtelMonitor-6.25.0.zip)){
+            throw 'Missing safe baseline source'
+          }
+      - name: Apply cumulative source patches with baseline regression checks
+        shell: pwsh
+        working-directory: feature
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive ../publisher/releases/AirtelMonitor-6.25.0.zip work
+          $original=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          foreach($patch in @('patch_v626.py')){
+            python "release-candidate/$patch"
+            if($LASTEXITCODE -ne 0){throw "Patch failed: $patch"}
+          }
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $original){
+            throw 'Monitoring engine changed unexpectedly'
+          }
+          @'
+          from pathlib import Path
+          a=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          b=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for key in ('new VScrollBar{','signalTrayPopup.Deactivate+=',
+                      'TrackUsageCheckpoint(','downloadSpeed.Text=Rate(rateRx)',
+                      'uploadSpeed.Text=Rate(rateTx)',
+                      'UpdateSignalTrayState(stat,Str(d,"adapterName"),Str(d,"wifiSignal"));'):
+              assert key in a and key in b,key
+          for key in ('const string AppVersion = "6.26.0";',
+                      'MonthTotalFromExistingDays(d)',
+                      'void DrawSignalPulse(Graphics g,Rectangle bounds,int? signalPercent)',
+                      'down=ArrowSpeedCard(',
+                      'up=ArrowSpeedCard(',
+                      'chartViewDropdown.Items.AddRange',
+                      'pinnedDetails.Controls.Add(lastUpdateDisclosure,0,4);',
+                      'pinnedDetails.Controls.Add(last,0,5);',
+                      'pinnedDetails.RowStyles[5].Height=last.Visible?27:0;',
+                      'networkTitle.Margin=new Padding(0);',
+                      'hotspotCaption.Margin=new Padding(0);',
+                      'networkHeader.Padding=new Padding(0);',
+                      'hotspotHeader.Padding=new Padding(0);',
+                      'detailBar.Enabled=false;',
+                      'lastUpdateDisclosure.Text=last.Visible',
+                      'void RenderUsagePeriod()',
+                      'void UpdateUsageCaption()',
+                      'RoundSurface(card,15)',
+                      'void CheckSystemAppearance()',
+                      'updates/stable.json',
+                      'appearance.txt'):
+              assert key in b,key
+          print('PASS: old functionality preserved, new features and feed fallback present')
+          '@ | Set-Content work/verify_release.py -Encoding UTF8
+          python work/verify_release.py
+          if($LASTEXITCODE -ne 0){throw 'Source regression check failed'}
+      - name: Compile on Windows and produce upgrade package
+        shell: powershell
+        working-directory: feature
+        run: |
+          $ErrorActionPreference='Stop'
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count){throw 'Monitoring engine PowerShell syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Windows EXE missing'}
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 work/AirtelMonitor-6.26.0.zip -Force
+          Compress-Archive work/AirtelDataMonitor.exe,work/AirtelMonitorNative.cs,work/monitor.ps1 work/T-Net-6.26.0-Windows-compiled.zip -Force
+      - name: Validate actual in-place updater and protected history
+        shell: powershell
+        working-directory: feature
+        run: |
+          $ErrorActionPreference='Stop'
+          $src='releases/AirtelMonitor-6.11.0.zip'
+          # Only this disposable runner copy is replaced for the existing
+          # updater integration tests; the repository's old releases stay unchanged.
+          Copy-Item work/AirtelMonitor-6.26.0.zip $src -Force
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File release-candidate/updater-repair-v610/Test_Updater_Windows.ps1
+          if($LASTEXITCODE -ne 0){throw 'In-place update, backup or rollback safety tests failed'}
+      - name: Publish signed-off source and compiled release to stable channel
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Copy-Item feature/work/AirtelMonitor-6.26.0.zip publisher/releases/AirtelMonitor-6.26.0.zip
+          Copy-Item feature/work/T-Net-6.26.0-Windows-compiled.zip publisher/releases/T-Net-6.26.0-Windows-compiled.zip
+          $zip='publisher/releases/AirtelMonitor-6.26.0.zip'
+          $sha=(Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest=[ordered]@{
+            version='6.26.0'
+            status='available'
+            packageUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.26.0.zip'
+            sha256=$sha
+            notes='Network layout correction: compact fixed heights to prevent Last update dropdown from being clipped below the ECG Wi-Fi indicator; expandable timestamp appears beneath its arrow; Network and Hotspot share the same left padding and alignment. Decorative scrollbar, Wi-Fi percentage, charts and monitoring engine remain unchanged.'
+          }
+          [IO.File]::WriteAllText('publisher/updates/stable.json',($manifest | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false))
+          Set-Location publisher
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add releases/AirtelMonitor-6.26.0.zip releases/T-Net-6.26.0-Windows-compiled.zip updates/stable.json
+          git diff --cached --quiet
+          if($LASTEXITCODE -eq 0){
+            Write-Host 'Release already published; nothing to change'
+          }else{
+            git commit -m 'Publish validated T-Net v6.26 Network panel height and dropdown fix'
+            if($LASTEXITCODE -ne 0){throw 'Could not create release commit'}
+            git push origin HEAD:main
+            if($LASTEXITCODE -ne 0){throw 'Could not publish stable release'}
+          }
