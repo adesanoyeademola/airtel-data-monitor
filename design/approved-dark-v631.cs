@@ -404,6 +404,17 @@ namespace AirtelMonitorNative {
       signalStrength.Height=25;
       signalStrength.TextAlign=ContentAlignment.MiddleLeft;
       signalStrength.Margin=new Padding(0);
+      signalStrength.TextAlign=ContentAlignment.MiddleCenter;
+      signalStrength.Resize+=(sender,e)=>RoundSurface(signalStrength,21);
+      signalStrength.Paint+=(sender,e)=>{
+        if(signalStrength.Width<5 || signalStrength.Height<5)return;
+        e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+        using(var path=RoundedPath(new Rectangle(1,1,
+          signalStrength.Width-3,signalStrength.Height-3),19))
+        using(var pen=new Pen(appearanceIsLight?
+          Color.FromArgb(33,162,102):Color.FromArgb(66,225,126),1.5f))
+          e.Graphics.DrawPath(pen,path);
+      };
       signalRow.Controls.Add(signalStrengthTrack);
       signalRow.Controls.Add(signalStrength);
       Action fitNordicSignal=()=>{
@@ -506,12 +517,30 @@ namespace AirtelMonitorNative {
       // Dock the actual vertical scroll control at the lower right of the
       // Network card, independent of the potentially clipped details row.
       net.Controls.Add(detailBar);
+      detailBar.Visible=false;
+      var visualScroll=new Panel{
+        Width=9,Height=68,BackColor=Color.Transparent,
+        Tag="tnet-visual-scroll",Anchor=AnchorStyles.Right|AnchorStyles.Bottom
+      };
+      visualScroll.Paint+=(sender,e)=>{
+        e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+        using(var track=new SolidBrush(appearanceIsLight?
+          Color.FromArgb(218,229,245):Color.FromArgb(30,53,82)))
+          e.Graphics.FillRectangle(track,3,0,3,68);
+        using(var thumb=new SolidBrush(appearanceIsLight?
+          Color.FromArgb(128,158,199):Color.FromArgb(94,134,179)))
+          e.Graphics.FillRectangle(thumb,2,18,5,25);
+      };
+      net.Controls.Add(visualScroll);
       Action positionDetailBar=()=>{
         detailBar.Location=new Point(
           Math.Max(0,net.ClientSize.Width-net.Padding.Right-detailBar.Width-4),
           Math.Max(0,net.ClientSize.Height-net.Padding.Bottom-detailBar.Height+3));
-        detailBar.BringToFront();
         detailBar.TabStop=false;
+        visualScroll.Location=new Point(
+          Math.Max(0,net.ClientSize.Width-net.Padding.Right-visualScroll.Width-4),
+          Math.Max(0,net.ClientSize.Height-net.Padding.Bottom-visualScroll.Height+3));
+        visualScroll.BringToFront();
       };
       net.SizeChanged+=(sender,e)=>{positionDetailBar();syncDetails();};
       positionDetailBar();
@@ -2021,6 +2050,11 @@ namespace AirtelMonitorNative {
       StyleApprovedVisuals(this,useLight);
       if(signalStrengthTrack!=null)
         signalStrengthTrack.BackColor=useLight?Color.FromArgb(219,232,249):Color.FromArgb(29,55,88);
+      if(signalStrength!=null){
+        signalStrength.BackColor=useLight?Color.FromArgb(232,248,239):Color.FromArgb(17,61,50);
+        signalStrength.ForeColor=useLight?Color.FromArgb(18,133,85):Color.FromArgb(132,242,170);
+        signalStrength.Invalidate();
+      }
       if(chart!=null && chart.Series.Count>0){
         chart.Series[0].Color=useLight?Color.FromArgb(57,132,241):Color.FromArgb(12,143,255);
         chart.Series[0].BackGradientStyle=GradientStyle.TopBottom;
@@ -2044,7 +2078,7 @@ namespace AirtelMonitorNative {
         updateButton.ForeColor=useLight?lightInk:Color.White;
       }
       if(appearanceButton!=null){
-        appearanceButton.Text="◐ Appearance  ▾";
+        appearanceButton.Text=useLight?"☀ Appearance  ▾":"☾ Appearance  ▾";
         appearanceButton.BackColor=useLight?
           Color.FromArgb(231,239,248):Color.FromArgb(32,46,68);
         appearanceButton.ForeColor=useLight?lightInk:darkInk;
