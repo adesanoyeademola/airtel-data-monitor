@@ -1,4 +1,5 @@
 name: Capture actual running Nordic v6.28 window
+# Re-render the polished sidebar and Appearance control.
 on:
   push:
     branches: [design/nordic-reference-faithful-v628]
