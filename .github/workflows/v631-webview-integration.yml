@@ -9,7 +9,7 @@ on:
       - '.github/workflows/v631-webview-integration.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   verify-approved-interface:
     runs-on: windows-latest
@@ -93,6 +93,51 @@ jobs:
           Set-Content work/approved-ui-script.js $match.Groups[1].Value -Encoding UTF8
           node --check work/approved-ui-script.js
           if($LASTEXITCODE -ne 0){throw 'UI JavaScript failed parsing'}
+      - name: Capture approved browser UI from actual Windows application
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $capture=Join-Path (Resolve-Path work).Path 'approved-runtime-dark.png'
+          $env:TNET_DESIGN_CAPTURE_PATH=$capture
+          $app=Start-Process -FilePath (Resolve-Path work/AirtelDataMonitor.exe) -WorkingDirectory (Resolve-Path work) -PassThru
+          try{
+            $complete=$false
+            for($i=0;$i -lt 90;$i++){
+              Start-Sleep -Milliseconds 500
+              if(Test-Path $capture){$complete=$true;break}
+              $app.Refresh()
+              if($app.HasExited){throw 'T-Net exited before its modern UI was rendered'}
+            }
+            if(!$complete){throw 'The actual embedded UI did not render a screenshot'}
+            New-Item -ItemType Directory design-reviews -Force | Out-Null
+            Copy-Item $capture design-reviews/approved-v631-webview-runtime.png
+            Add-Type -AssemblyName System.Drawing
+            $image=[System.Drawing.Image]::FromFile($capture)
+            try{
+              Write-Host "Rendered Chromium UI dimensions: $($image.Width)x$($image.Height)"
+              $thumb=New-Object System.Drawing.Bitmap(1120,630)
+              try{
+                $g=[System.Drawing.Graphics]::FromImage($thumb)
+                try{$g.DrawImage($image,0,0,1120,630)}finally{$g.Dispose()}
+                $ms=New-Object System.IO.MemoryStream
+                try{
+                  $thumb.Save($ms,[System.Drawing.Imaging.ImageFormat]::Jpeg)
+                  [IO.File]::WriteAllText('design-reviews/approved-v631-webview-base64.txt',
+                    [Convert]::ToBase64String($ms.ToArray()),[Text.Encoding]::ASCII)
+                }finally{$ms.Dispose()}
+              }finally{$thumb.Dispose()}
+            }finally{$image.Dispose()}
+          }finally{
+            if(!$app.HasExited){Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue}
+          }
+      - name: Record actual rendered UI for review on design branch only
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add design-reviews/approved-v631-webview-runtime.png design-reviews/approved-v631-webview-base64.txt
+          git commit -m 'Capture real WebView2 approved UI before any stable release'
+          git push origin HEAD:design/approved-dark-dashboard-v631
       - name: Package isolated preview only
         shell: pwsh
         run: |
