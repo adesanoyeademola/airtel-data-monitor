@@ -1,0 +1,43 @@
+name: Export Nordic visual thumbnail
+on:
+  push:
+    branches: [design/nordic-reference-faithful-v628]
+    paths: [.github/workflows/v628-thumbnail.yml]
+permissions:
+  contents: write
+jobs:
+  thumbnail:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reduce rendered image and store base64 inspection payload
+        shell: powershell
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $original=[System.Drawing.Image]::FromFile((Resolve-Path design-reviews/nordic-v628-winform.png))
+          try{
+            $bmp=New-Object System.Drawing.Bitmap(960,540)
+            $g=[System.Drawing.Graphics]::FromImage($bmp)
+            try{
+              $g.InterpolationMode=[System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+              $g.DrawImage($original,0,0,960,540)
+              $stream=New-Object System.IO.MemoryStream
+              try{
+                $encoder=[System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1
+                $params=New-Object System.Drawing.Imaging.EncoderParameters(1)
+                $params.Param[0]=New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality,[long]55)
+                $bmp.Save($stream,$encoder,$params)
+                [IO.File]::WriteAllText('design-reviews/nordic-v628-base64.txt',[Convert]::ToBase64String($stream.ToArray()),[Text.Encoding]::ASCII)
+                Write-Host "Rendered image: $($original.Width)x$($original.Height); thumbnail bytes $($stream.Length)"
+                $bmp.Save('design-reviews/nordic-v628-thumbnail.jpg',[System.Drawing.Imaging.ImageFormat]::Jpeg)
+              }finally{$stream.Dispose()}
+            }finally{$g.Dispose();$bmp.Dispose()}
+          }finally{$original.Dispose()}
+      - name: Save proof on design branch
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add design-reviews/nordic-v628-base64.txt design-reviews/nordic-v628-thumbnail.jpg
+          git commit -m 'Store reduced Nordic actual render for visual QA'
+          git push origin HEAD:design/nordic-reference-faithful-v628
