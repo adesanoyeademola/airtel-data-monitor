@@ -115,7 +115,7 @@ namespace AirtelMonitorNative {
     bool configured = false, closing = false, share = false;
     const string Base = "http://127.0.0.1:8787";
     Color bg = Color.FromArgb(13, 19, 30), panel = Color.FromArgb(25, 35, 53), ink = Color.FromArgb(239, 245, 252), muted = Color.FromArgb(171, 187, 207), accent = Color.FromArgb(235, 65, 86);
-    string appearanceMode="light";
+    string appearanceMode="dark";
     bool appearanceIsLight=false;
     Button appearanceButton;
     ContextMenuStrip appearanceMenu;
@@ -781,7 +781,7 @@ namespace AirtelMonitorNative {
         TextAlign=ContentAlignment.BottomLeft},0,0);
       var reading=new Label{Text="— Kbps",Dock=DockStyle.Fill,
         AutoEllipsis=true,ForeColor=ink,
-        Font=new Font("Segoe UI",17,FontStyle.Bold),
+        Font=new Font("Segoe UI",16,FontStyle.Bold),
         TextAlign=ContentAlignment.MiddleLeft};
       values.Controls.Add(reading,0,1);
       stack.Controls.Add(circle,0,0);
