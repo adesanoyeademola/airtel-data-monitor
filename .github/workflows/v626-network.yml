@@ -1,7 +1,7 @@
 name: Verify T-Net v6.26 expanded network card
 on:
   push:
-    branches: [feature/network-disclosure-alignment-v626]
+    branches: [fix/network-layout-v626]
     paths:
       - '.github/workflows/v626-network.yml'
       - 'release-candidate/patch_v626.py'
