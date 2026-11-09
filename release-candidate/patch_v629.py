@@ -4,7 +4,7 @@ s=p.read_text(encoding="utf-8-sig")
 def one(old,new):
     global s
     n=s.count(old)
-    if n!=1: raise RuntimeError("Expected exactly one v6.27 anchor, got %d: %r"%(n,old[:180]))
+    if n!=1: raise RuntimeError("Expected exactly one baseline anchor, got %d: %r"%(n,old[:180]))
     s=s.replace(old,new)
 
 one('const string AppVersion = "6.27.0";','const string AppVersion = "6.29.0";')
@@ -317,4 +317,4 @@ for q in (
 ):
     if q not in s:raise RuntimeError('Missing reference-layout or preserved feature '+q)
 p.write_text(s,encoding='utf-8')
-print('T-Net v6.28: three top tiles and chart on left, full-height network card on right, sidebar/header match option 02')
+print('T-Net v6.29: three top tiles and chart on left, full-height network card on right, sidebar/header match option 02')
