@@ -1,0 +1,80 @@
+name: Capture actual running Nordic v6.28 window
+on:
+  push:
+    branches: [design/nordic-reference-faithful-v628]
+    paths: [.github/workflows/v628-running-window.yml]
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build T-Net preview
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.27.0.zip work
+          python release-candidate/patch_v628.py
+          if($LASTEXITCODE -ne 0){throw 'Patch failed'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+      - name: Capture real running application via PrintWindow
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          Add-Type -AssemblyName System.Drawing
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public class WindowCapture {
+            [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
+            [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int mode);
+            [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+          }
+          '@
+          $app=Start-Process -FilePath (Resolve-Path work/AirtelDataMonitor.exe) -WorkingDirectory (Resolve-Path work) -PassThru
+          try{
+            $hwnd=[IntPtr]::Zero
+            for($i=0;$i -lt 18;$i++){
+              Start-Sleep -Milliseconds 400
+              $app.Refresh()
+              if($app.HasExited){throw 'T-Net exited before render'}
+              $hwnd=$app.MainWindowHandle
+              if($hwnd -ne [IntPtr]::Zero){break}
+            }
+            if($hwnd -eq [IntPtr]::Zero){throw 'Running window not found'}
+            [WindowCapture]::SetWindowPos($hwnd,[IntPtr]::Zero,0,0,1420,800,0x40) | Out-Null
+            Start-Sleep -Milliseconds 1200
+            $bmp=New-Object System.Drawing.Bitmap(1420,800)
+            try{
+              $g=[System.Drawing.Graphics]::FromImage($bmp)
+              try{
+                $rendered=[WindowCapture]::PrintWindow($hwnd,$g.GetHdc(),2)
+                $g.ReleaseHdc()
+                if(!$rendered){throw 'PrintWindow capture returned failure'}
+              }finally{$g.Dispose()}
+              New-Item -ItemType Directory design-reviews -Force | Out-Null
+              $bmp.Save('design-reviews/nordic-v628-actual.png',[System.Drawing.Imaging.ImageFormat]::Png)
+              $small=New-Object System.Drawing.Bitmap(960,540)
+              try{
+                $gs=[System.Drawing.Graphics]::FromImage($small)
+                try{$gs.DrawImage($bmp,0,0,960,540)}finally{$gs.Dispose()}
+                $ms=New-Object System.IO.MemoryStream
+                try{
+                  $small.Save($ms,[System.Drawing.Imaging.ImageFormat]::Jpeg)
+                  [IO.File]::WriteAllText('design-reviews/nordic-v628-actual-base64.txt',[Convert]::ToBase64String($ms.ToArray()),[Text.Encoding]::ASCII)
+                }finally{$ms.Dispose()}
+              }finally{$small.Dispose()}
+            }finally{$bmp.Dispose()}
+          }finally{
+            if(!$app.HasExited){Stop-Process -Id $app.Id -Force}
+          }
+      - name: Commit screenshot for UI review
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add design-reviews/nordic-v628-actual.png design-reviews/nordic-v628-actual-base64.txt
+          git commit -m 'Capture running Nordic v6.28 Windows UI for comparison'
+          git push origin HEAD:design/nordic-reference-faithful-v628
