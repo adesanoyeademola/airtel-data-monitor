@@ -177,13 +177,15 @@ namespace AirtelMonitorNative {
         g.FillRectangle(brush,bounds);
     }
     Panel PanelCard() {
-      var card=new Panel { BackColor=panel, Dock=DockStyle.Fill, Padding=new Padding(18), Margin=new Padding(7),Tag="tnet-card" };
-      card.Resize+=(sender,e)=>RoundSurface(card,15);
+      var card=new Panel{BackColor=panel,Dock=DockStyle.Fill,
+        Padding=new Padding(17),Margin=new Padding(7),Tag="tnet-card"};
+      card.Resize+=(sender,e)=>RoundSurface(card,20);
       card.Paint+=(sender,e)=>{
-        if(!appearanceIsLight || card.Width<3 || card.Height<3)return;
+        if(card.Width<5||card.Height<5)return;
         e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
-        using(var path=RoundedPath(new Rectangle(0,0,card.Width-1,card.Height-1),15))
-        using(var pen=new Pen(Color.FromArgb(223,233,248),1))
+        using(var path=RoundedPath(new Rectangle(1,1,card.Width-3,card.Height-3),20))
+        using(var pen=new Pen(appearanceIsLight?
+          Color.FromArgb(219,230,247):Color.FromArgb(49,77,122),1.1f))
           e.Graphics.DrawPath(pen,path);
       };
       return card;
@@ -715,30 +717,45 @@ namespace AirtelMonitorNative {
         ForeColor=labelColor,TextAlign=ContentAlignment.MiddleLeft},0,0);var val=new Label{Text="0 B",Dock=DockStyle.Fill,ForeColor=ink,Font=new Font("Segoe UI",22,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft};stack.Controls.Add(val,0,1);p.Controls.Add(stack);parent.Controls.Add(p,col,0);return val;}
     Label ArrowSpeedCard(TableLayoutPanel parent,string name,int col,string arrow,Color color){
       var card=PanelCard();
-      card.Padding=new Padding(13,11,12,10);
-      var stack=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,
-        Margin=new Padding(0)};
-      stack.RowStyles.Add(new RowStyle(SizeType.Percent,41));
-      stack.RowStyles.Add(new RowStyle(SizeType.Percent,59));
-      var caption=new Label{Text=name,ForeColor=muted,Dock=DockStyle.Fill,
-        Font=new Font("Segoe UI",9,FontStyle.Regular),
+      card.Padding=new Padding(18);
+      var stack=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,
+        Margin=new Padding(0),Padding=new Padding(0)};
+      stack.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,75));
+      stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+      var circle=new Panel{Size=new Size(62,62),Anchor=AnchorStyles.Left,
+        Margin=new Padding(0),BackColor=Color.Transparent};
+      circle.Paint+=(sender,e)=>{
+        e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+        var shade=arrow=="↓"?Color.FromArgb(22,109,209):Color.FromArgb(24,129,77);
+        using(var brush=new SolidBrush(shade))
+          e.Graphics.FillEllipse(brush,1,1,59,59);
+        using(var pen=new Pen(color,1.6f))
+          e.Graphics.DrawEllipse(pen,1,1,59,59);
+      };
+      var arrowLabel=new Label{Text=arrow,Location=new Point(11,6),
+        Size=new Size(40,48),Margin=new Padding(0,5,0,0),
+        BackColor=Color.Transparent,ForeColor=Color.White,
+        TextAlign=ContentAlignment.MiddleCenter,
+        Font=new Font("Segoe UI",23,FontStyle.Bold)};
+      circle.Controls.Add(arrowLabel);
+      if(arrow=="↓")downloadArrow=arrowLabel;else uploadArrow=arrowLabel;
+      var values=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,
+        Margin=new Padding(0),Padding=new Padding(0)};
+      values.RowStyles.Add(new RowStyle(SizeType.Percent,48));
+      values.RowStyles.Add(new RowStyle(SizeType.Percent,52));
+      values.Controls.Add(new Label{Text=name,Dock=DockStyle.Fill,
+        ForeColor=muted,Font=new Font("Segoe UI",10),
+        TextAlign=ContentAlignment.BottomLeft},0,0);
+      var reading=new Label{Text="— Kbps",Dock=DockStyle.Fill,
+        AutoEllipsis=true,ForeColor=ink,
+        Font=new Font("Segoe UI",17,FontStyle.Bold),
         TextAlign=ContentAlignment.MiddleLeft};
-      stack.Controls.Add(caption,0,0);
-      var content=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.LeftToRight,
-        WrapContents=false,AutoScroll=false,Margin=new Padding(0),Padding=new Padding(0)};
-      var arrowLabel=new Label{Text=arrow,Size=new Size(30,34),
-        Margin=new Padding(0,3,7,0),Font=new Font("Segoe UI",16,FontStyle.Bold),
-        ForeColor=color,TextAlign=ContentAlignment.MiddleCenter};
-      var speedValue=new Label{Text="— Kbps",AutoSize=true,
-        MaximumSize=new Size(180,39),Margin=new Padding(0,6,0,0),
-        Font=new Font("Segoe UI",15,FontStyle.Bold),ForeColor=ink,
-        TextAlign=ContentAlignment.MiddleLeft};
-      content.Controls.Add(arrowLabel);content.Controls.Add(speedValue);
-      if(arrow=="↓")downloadArrow=arrowLabel;
-      else uploadArrow=arrowLabel;
-      stack.Controls.Add(content,0,1);
-      card.Controls.Add(stack);parent.Controls.Add(card,col,0);
-      return speedValue;
+      values.Controls.Add(reading,0,1);
+      stack.Controls.Add(circle,0,0);
+      stack.Controls.Add(values,1,0);
+      card.Controls.Add(stack);
+      parent.Controls.Add(card,col,0);
+      return reading;
     }
     Label CompactSpeedPill(FlowLayoutPanel parent,string arrow,Color color){
       var pill=new Panel{Width=91,Height=34,Margin=new Padding(2,3,2,3),
