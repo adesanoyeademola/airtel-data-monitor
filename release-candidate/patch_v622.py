@@ -8,6 +8,9 @@ def one(a,b):
     s=s.replace(a,b)
 
 one('const string AppVersion = "6.21.0";','const string AppVersion = "6.22.0";')
+
+one('''last, today, down, up, week, monthly, downloadSpeed, uploadSpeed;''',
+    '''last, today, down, up, downloadSpeed, uploadSpeed;''')
 one('''    int currentUsageView=0; // 0 daily, 3 weekly, 4 monthly''',
 '''    int currentUsageView=0; // 0 daily, 3 weekly, 4 monthly
     double latestTodayConsumed=0,latestSevenDayConsumed=0,latestMonthConsumed=0;
@@ -49,9 +52,11 @@ one('''        CaptureLiveSpeedSample(stat,liveSampleId,liveSampleUtc,''',
         down.Text=downloadSpeed.Text;
         up.Text=uploadSpeed.Text;
         downloadArrowMoving=stat=="tracking" && !legacyService &&
-          liveValid && liveFresh && rateRx>0 && PlausibleRate(rateRx);
+          liveValid && liveFresh && PlausibleRate(rateRx) &&
+          Rate(rateRx)!="0.0 Kbps" && rateRx>0;
         uploadArrowMoving=stat=="tracking" && !legacyService &&
-          liveValid && liveFresh && rateTx>0 && PlausibleRate(rateTx);
+          liveValid && liveFresh && PlausibleRate(rateTx) &&
+          Rate(rateTx)!="0.0 Kbps" && rateTx>0;
         CaptureLiveSpeedSample(stat,liveSampleId,liveSampleUtc,''')
 # Ensure icons freeze when service errors, rather than showing stale motion.
 one('''          downloadSpeed.Text="— Kbps";uploadSpeed.Text="— Kbps";
