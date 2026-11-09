@@ -43,11 +43,66 @@ body.light{--bg:#eef4fd;--main:#f3f7fe;--sidebar-top:#e7f2ff;--sidebar-bottom:#d
 function chart(p){const d=values[p],svg=by('usage-svg'),left=66,top=22,bottom=380,right=790,w=right-left,h=bottom-top;let c=`<defs><linearGradient id="barblue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39c0ff"/><stop offset="1" stop-color="#0b68f2"/></linearGradient></defs>`;for(let k=0;k<=5;k++){const y=bottom-k*h/5;c+=`<line x1="${left}" x2="${right}" y1="${y}" y2="${y}" class="gridline"/><text x="${left-12}" y="${y+6}" text-anchor="end" class="axis-text">${Math.round(k*d.max/5).toLocaleString()}</text>`;}c+=`<line x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}" class="axisline"/>`;const n=d.labels.length,step=w/n,width=Math.min(77,step*.7);d.labels.forEach((l,i)=>{const x=left+step*i+step/2,ht=d.vals[i]/d.max*h;c+=`<rect x="${x-width/2}" y="${bottom-ht}" width="${width}" height="${Math.max(0,ht)}" rx="3" fill="url(#barblue)"/>`;c+=`<text x="${x}" y="${bottom+29}" text-anchor="middle" class="axis-text">${l}</text>`});svg.innerHTML=c;by('usage-caption').textContent=d.caption}
 function toast(message){const el=by('toast');el.textContent=message;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3000)}
 function theme(value){chosen=value;const light=value==='light'||value==='auto'&&window.matchMedia('(prefers-color-scheme:light)').matches;body.classList.toggle('light',light);by('theme-symbol').textContent=light?'☀':'☾';doc.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('active',b.dataset.theme===value));tm.hidden=true;tb.setAttribute('aria-expanded','false')}
-tb.onclick=()=>{tm.hidden=!tm.hidden;tb.setAttribute('aria-expanded',String(!tm.hidden))};doc.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>theme(b.dataset.theme));doc.addEventListener('click',e=>{if(!e.target.closest('.theme-wrap')){tm.hidden=true;tb.setAttribute('aria-expanded','false')}});window.matchMedia('(prefers-color-scheme:light)').addEventListener('change',()=>{if(chosen==='auto')theme('auto')});doc.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;doc.querySelectorAll('[data-period]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});by('chart-mode').value='usage';chart(period)});by('chart-mode').onchange=e=>{if(e.target.value==='usage')chart(period);else if(e.target.value==='speed'){by('usage-svg').innerHTML='<text x="400" y="200" text-anchor="middle" class="axis-text" style="font-size:22px">Live speed preview</text><text x="400" y="239" text-anchor="middle" class="axis-text">Requires Windows counters in the actual T-Net app</text>';by('usage-caption').textContent='Preview mode · not monitoring traffic'}else{by('usage-svg').innerHTML='<text x="400" y="208" text-anchor="middle" class="axis-text" style="font-size:20px">Usage log · design preview</text>';by('usage-caption').textContent='Actual log entries will come from T-Net'}};by('last-toggle').onclick=()=>{const el=by('last-detail');el.hidden=!el.hidden;by('last-toggle').setAttribute('aria-expanded',String(!el.hidden))};by('check-updates').onclick=()=>toast('Preview only — no update check was performed');doc.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{doc.querySelectorAll('[data-nav]').forEach(n=>n.classList.toggle('active',n===b));if(b.dataset.nav!=='Dashboard')toast(`${b.dataset.nav}: navigation styling preview — T-Net is not connected`)});
+tb.onclick=()=>{tm.hidden=!tm.hidden;tb.setAttribute('aria-expanded',String(!tm.hidden))};doc.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>theme(b.dataset.theme));doc.addEventListener('click',e=>{if(!e.target.closest('.theme-wrap')){tm.hidden=true;tb.setAttribute('aria-expanded','false')}});window.matchMedia('(prefers-color-scheme:light)').addEventListener('change',()=>{if(chosen==='auto')theme('auto')});doc.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;doc.querySelectorAll('[data-period]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});by('chart-mode').value='usage';chart(period)});by('chart-mode').onchange=e=>{if(e.target.value==='usage')chart(period);else if(e.target.value==='speed')renderSpeed();else renderLog()};by('last-toggle').onclick=()=>{const el=by('last-detail');el.hidden=!el.hidden;by('last-toggle').setAttribute('aria-expanded',String(!el.hidden))};by('check-updates').onclick=()=>toast('Preview only — no update check was performed');doc.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{doc.querySelectorAll('[data-nav]').forEach(n=>n.classList.toggle('active',n===b));if(b.dataset.nav!=='Dashboard')toast(`${b.dataset.nav}: navigation styling preview — T-Net is not connected`)});
+
+const speedSamples=[];
+let actualLogRows=[];
+const parseKbps=value=>{
+ const match=String(value||"").match(/(\d+(?:\.\d+)?)\s*(Gbps|Mbps|Kbps|bps)\b/i);
+ if(!match)return null;
+ const val=Number(match[1]);if(!Number.isFinite(val))return null;
+ const unit=match[2].toLowerCase();
+ return unit==="gbps"?val*1000000:unit==="mbps"?val*1000:unit==="bps"?val/1000:val;
+};
+const safeText=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+function renderSpeed(){
+ const svg=by("usage-svg"),left=66,right=790,top=24,bottom=380;
+ const max=Math.max(1,...speedSamples.map(x=>Math.max(x.down,x.up)))*1.15;
+ let out="";
+ for(let i=0;i<5;i++){
+   const y=bottom-(bottom-top)*i/4;
+   out+='<line x1="'+left+'" x2="'+right+'" y1="'+y+'" y2="'+y+'" class="gridline"/><text x="'+(left-9)+'" y="'+(y+5)+'" text-anchor="end" class="axis-text">'+Math.round(max*i/4)+'</text>';
+ }
+ for(const [key,color] of [["down","#23a8ff"],["up","#39d993"]]){
+   const pts=speedSamples.map((item,i)=>{
+     const x=left+(right-left)*(speedSamples.length===1?1:i/(speedSamples.length-1));
+     const y=bottom-(item[key]/max)*(bottom-top);
+     return x.toFixed(1)+","+y.toFixed(1);
+   }).join(" ");
+   out+='<polyline fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts+'"/>';
+ }
+ if(speedSamples.length===0)out+='<text x="400" y="215" text-anchor="middle" class="axis-text">Waiting for a live Windows speed sample</text>';
+ svg.innerHTML=out;
+ const last=speedSamples[speedSamples.length-1];
+ by("usage-caption").textContent=last?"↓ "+last.down.toFixed(1)+" Kbps  ·  ↑ "+last.up.toFixed(1)+" Kbps":"Waiting for Windows counters";
+}
+function renderLog(){
+ const svg=by("usage-svg");
+ const rows=actualLogRows.slice(-9).reverse();
+ let out='<text x="44" y="34" class="axis-text" font-weight="bold">Recorded interval</text><text x="495" y="34" class="axis-text" font-weight="bold">Download</text><text x="655" y="34" class="axis-text" font-weight="bold">Upload</text>';
+ rows.forEach((r,i)=>{
+   const y=73+i*36;
+   out+='<line x1="37" x2="780" y1="'+(y+12)+'" y2="'+(y+12)+'" class="gridline"/><text x="44" y="'+y+'" class="axis-text">'+safeText(r.time)+'</text><text x="495" y="'+y+'" class="axis-text">'+safeText(bytes(r.download))+'</text><text x="655" y="'+y+'" class="axis-text">'+safeText(bytes(r.upload))+'</text>';
+ });
+ if(rows.length===0)out+='<text x="400" y="220" text-anchor="middle" class="axis-text">No recorded usage log intervals yet</text>';
+ svg.innerHTML=out;
+ by("usage-caption").textContent=rows.length?rows.length+" most recent recorded intervals":"Usage log · awaiting records";
+}
 const asText=(v)=>(v==null||v==="")?"—":String(v);
 const bytes=(v)=>{if(typeof v!=="number"||!Number.isFinite(v)||v<0)return "—";return v>=1073741824?(v/1073741824).toFixed(2)+" GB":v>=1048576?(v/1048576).toFixed(1)+" MB":v>=1024?(v/1024).toFixed(1)+" KB":Math.round(v)+" B"};
 window.TNetBridgeUpdate=(p)=>{
  if(!p||typeof p!=="object")return;
+ if(p.downloadSpeed!==undefined&&p.uploadSpeed!==undefined){
+   const down=parseKbps(p.downloadSpeed),up=parseKbps(p.uploadSpeed);
+   if(down!==null&&up!==null){
+     speedSamples.push({down,up});if(speedSamples.length>90)speedSamples.shift();
+     if(by("chart-mode").value==="speed")renderSpeed();
+   }
+ }
+ if(Array.isArray(p.usageLog)){
+   actualLogRows=p.usageLog;
+   if(by("chart-mode").value==="log")renderLog();
+ }
  for(const [k,id] of [["downloadSpeed","live-down"],["uploadSpeed","live-up"],["ssid","live-ssid"],["adapter","live-adapter"],["sampleAge","live-sample"],["timestamp","last-detail"]])if(p[k]!==undefined)by(id).textContent=asText(p[k]);
  if(p.signalPercent!==undefined){
    const valid=typeof p.signalPercent==="number"&&p.signalPercent>=0&&p.signalPercent<=100;
