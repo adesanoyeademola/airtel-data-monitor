@@ -34,7 +34,7 @@ one('''      headerActions.Controls.Add(appearanceButton);
 '''      headerActions.Controls.Add(appearanceButton);
       ShapeAppearanceButton();''')
 # Right-to-left flow: update, appearance, download, upload, status-dot+text.
-one('''headerActions.Controls.Add(updateButton);headerActions.Controls.Add(status);headerActions.Controls.Add(statusDot);''',
+one('''headerActions.Controls.Add(status);headerActions.Controls.Add(statusDot);''',
 '''headerActions.Controls.Add(updateButton);
       var statusLine=new FlowLayoutPanel{
         FlowDirection=FlowDirection.LeftToRight,WrapContents=false,
