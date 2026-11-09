@@ -10,6 +10,41 @@
 body.light{--bg:#eef4fd;--main:#f3f7fe;--sidebar-top:#e7f2ff;--sidebar-bottom:#dceaff;--card:#ffffff;--card2:#f6faff;--border:#d5e4fa;--text:#162d4b;--muted:#58718e;--subtle:#7d96b7;--chip:#e5eefb;--chip-active:#1386ef;--pill:#e0edfc;--line:#d5e1ef;--shadow:rgba(53,89,137,.07);--callout:#edf5ff;background:#fff}body.light .app{background:var(--bg)}body.light .sidebar{border-right-color:#c4d8f0}body.light .brand{color:#1b5cbd}body.light .brand-icon{color:#1878e6;filter:none}body.light .nav button{color:#335475}body.light .nav button.active{color:white}body.light .version{background:#e4efff;color:#3d6592;border-color:#c1d7f5}body.light .content{background:radial-gradient(ellipse at 27% 0%,#fff, #eef4fd 75%)}body.light .btn{background:#e4effc;border-color:#c8dbf4}body.light .btn:hover{background:#d5e8ff}body.light .metric-icon{box-shadow:none}body.light .card{box-shadow:0 5px 17px #8dacd10c}body.light .tabs button.active{color:white}body.light .drop{background:#f1f7ff;color:#19334c;border-color:#cadff6}body.light .theme-menu{background:white;border-color:#bdd4ef;box-shadow:0 10px 35px #102b4b30}body.light .theme-menu button{color:#304b66}body.light .theme-menu button.active{color:white}body.light .wave{background:#eaf4ff;border-color:#c9dff4}body.light .percent{background:#edfff4;color:#11865f}body.light .disclosure{background:#e7f0fc}body.light .timestamp{background:#eef6ff}body.light .axisline{stroke:#6d96bc}
 @media(max-width:1350px){.sidebar{width:218px}.brand{font-size:26px;margin-left:12px}.nav button{font-size:16px}.workspace{grid-template-columns:minmax(0,1.65fr) minmax(315px,1fr)}.metric{padding:13px;gap:10px}.metric-icon{width:54px;height:54px}.metric-value{font-size:24px}.metric-label{font-size:14px}.card-title{font-size:22px}.net-card{padding:16px}.summary{padding:16px}.content{gap:12px}.primary,.secondary{gap:12px}.chart-card{padding:16px}}
 @media(max-width:1050px){.sidebar{width:188px}.workspace{grid-template-columns:1fr;overflow:auto}.content{overflow:auto}.primary{min-height:600px}.secondary{min-height:640px}.net-card{min-height:350px}.summary{min-height:260px}.toolbar{flex-wrap:wrap;min-height:60px}.metric-icon{width:52px;height:52px}}
+
+/* Independent navigation pages keep the approved dashboard unchanged. */
+.workspace[hidden],.detail-page[hidden]{display:none!important}
+.detail-page{flex:1;min-height:0;display:flex;flex-direction:column;gap:18px;overflow:auto;padding:1px 2px 10px}
+.detail-heading{flex:none;padding:7px 7px 0}
+.detail-heading h1{font-size:29px;font-weight:750;margin:0 0 7px;letter-spacing:-.35px}
+.detail-heading p{font-size:15px;color:var(--muted);margin:0;line-height:1.5}
+.detail-usage-grid,.detail-network-grid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(310px,1fr);gap:18px;min-height:0;flex:1}
+.detail-usage-grid .chart-card,.detail-network-grid .net-card{min-height:400px;height:100%;flex:1}
+.detail-usage-grid .summary{min-height:270px;flex:1}
+.detail-usage-grid>.summary,.detail-network-grid>.net-card{margin:0}
+.detail-network-grid .net-card{min-height:460px}
+.detail-info-card{padding:26px 28px;display:flex;flex-direction:column;gap:22px;min-height:270px}
+.detail-info-card .card-title{flex:none}
+.detail-fact{display:flex;flex-direction:column;gap:7px;border-bottom:1px solid var(--line);padding-bottom:16px}
+.detail-fact:last-child{border:none}
+.detail-fact-label{font-size:15px;color:var(--muted)}
+.detail-fact-value{font-weight:700;font-size:20px;overflow-wrap:anywhere}
+.history-card,.settings-card{padding:25px 29px;min-height:0;overflow:auto}
+.history-card{flex:1}
+.history-table{width:100%;border-collapse:collapse;font-size:16px;text-align:left;margin-top:10px}
+.history-table th{color:var(--muted);font-weight:550;padding:16px 12px;border-bottom:1px solid var(--line)}
+.history-table td{padding:16px 12px;border-bottom:1px solid var(--line)}
+.history-empty{padding:42px 16px;color:var(--muted);text-align:center}
+.settings-card{max-width:820px;flex:1;width:100%}
+.setting-item{padding:22px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:26px}
+.setting-item:last-child{border-bottom:0}
+.setting-label{font-size:19px;font-weight:650;margin-bottom:7px}
+.setting-help{color:var(--muted);font-size:14px;line-height:1.5;max-width:460px}
+.setting-choices{display:flex;gap:5px;padding:5px;border-radius:13px;background:var(--chip);white-space:nowrap}
+.setting-choices button{border:0;border-radius:10px;padding:11px 18px;background:transparent;color:var(--text);font-size:15px}
+.setting-choices button.active{background:linear-gradient(100deg,#067bea,#169afc);color:#fff;font-weight:700}
+.setting-action{background:linear-gradient(105deg,#0875ec,#189ffc);border:1px solid #2ba8ff;border-radius:12px;padding:12px 17px;color:#fff;font-weight:650}
+@media(max-width:1100px){.detail-usage-grid,.detail-network-grid{grid-template-columns:1fr}.detail-page{overflow:auto}.detail-usage-grid>.chart-card{min-height:470px}.setting-item{align-items:flex-start;flex-direction:column}}
+
 </style>
 </head>
 <body>
@@ -36,14 +71,117 @@ body.light{--bg:#eef4fd;--main:#f3f7fe;--sidebar-top:#e7f2ff;--sidebar-bottom:#d
 <section class="workspace"><div class="primary"><div class="metrics"><article class="metric card"><div class="metric-icon"><svg><use href="#i-down"/></svg></div><div><div class="metric-label">Download speed</div><div class="metric-value" id="live-down">—</div></div></article><article class="metric card"><div class="metric-icon green"><svg><use href="#i-up"/></svg></div><div><div class="metric-label">Upload speed</div><div class="metric-value" id="live-up">—</div></div></article><article class="metric card"><div class="metric-icon teal"><svg><use href="#i-wifi"/></svg></div><div><div class="metric-label">Wi-Fi signal</div><div class="metric-value signal" id="live-signal">—</div></div></article></div>
 <article class="chart-card card"><div class="tabs" role="tablist" aria-label="Usage time period"><button role="tab" data-period="daily">Daily usage</button><button role="tab" data-period="weekly" class="active" aria-selected="true">Weekly usage</button><button role="tab" data-period="monthly">Monthly usage</button></div><div class="chart-box"><svg id="usage-svg" viewBox="0 0 800 435" aria-label="Example usage chart — preview data only" role="img"></svg></div><div class="chart-footer"><span id="usage-caption">7-day usage: 2.28 GB</span><select class="drop" id="chart-mode" aria-label="Chart view"><option value="usage">Usage chart</option><option value="speed">Live speed</option><option value="log">Usage log</option></select></div></article></div>
 <div class="secondary"><article class="net-card card"><div class="card-title"><svg><use href="#i-network"/></svg>Network<span class="sample" id="live-sample">Last sample: waiting</span></div><div class="info-row"><svg class="info-icon"><use href="#i-wifi"/></svg><span class="info-label">Hotspot</span><span class="info-value" id="live-ssid">—</span></div><div class="source">Live speed source: Windows counters</div><div class="info-row"><svg class="info-icon"><use href="#i-screen"/></svg><span class="info-label">Adapter</span><span class="info-value" id="live-adapter">—</span></div><div class="signal-label">Wi-Fi signal strength</div><div class="signal-layout"><div class="wave"><svg viewBox="0 0 280 49" preserveAspectRatio="none"><path d="M8 25H104 L116 24 L124 19 L135 30 L145 11 L156 35 L168 18 L181 26 L272 25" stroke="#4bf7a1" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/><circle cx="254" cy="25" r="3" fill="#4bf7a1"/></svg></div><div class="percent" id="live-signal-secondary">—</div></div><div><button class="disclosure" id="last-toggle" aria-expanded="false"><svg><use href="#i-chevron"/></svg>Last update</button><div class="timestamp" id="last-detail" hidden>Waiting for a monitor sample</div></div></article>
-<article class="summary card"><div class="card-title"><svg><use href="#i-stack"/></svg>Usage overview</div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>Today</span><span class="summary-number" id="live-today">—</span></div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>Last 7 days</span><span class="summary-number" id="live-seven">—</span></div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>This month</span><span class="summary-number" id="live-month">—</span></div></article></div></section></main></div></div>
+<article class="summary card"><div class="card-title"><svg><use href="#i-stack"/></svg>Usage overview</div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>Today</span><span class="summary-number" id="live-today">—</span></div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>Last 7 days</span><span class="summary-number" id="live-seven">—</span></div><div class="summary-line"><span class="summary-name"><svg><use href="#i-calendar"/></svg>This month</span><span class="summary-number" id="live-month">—</span></div></article></div></section>
+<section class="detail-page" id="detail-usage" aria-label="Usage details" hidden>
+ <div class="detail-heading"><h1>Usage details</h1><p>Your recorded data consumption, daily trends, weekly trends, monthly totals, and live speed.</p></div>
+ <div class="detail-usage-grid"><div id="usage-chart-slot"></div><div id="usage-summary-slot"></div></div>
+</section>
+<section class="detail-page" id="detail-network" aria-label="Network details" hidden>
+ <div class="detail-heading"><h1>Network details</h1><p>Live Wi-Fi adapter, hotspot connection, signal strength and connection information reported by Windows.</p></div>
+ <div class="detail-network-grid"><div id="network-card-slot"></div>
+  <article class="card detail-info-card"><div class="card-title"><svg><use href="#i-screen"/></svg>Connection information</div>
+   <div class="detail-fact"><span class="detail-fact-label">Active adapter</span><span class="detail-fact-value" id="page-network-adapter">—</span></div>
+   <div class="detail-fact"><span class="detail-fact-label">Connected Wi-Fi</span><span class="detail-fact-value" id="page-network-ssid">—</span></div>
+   <div class="detail-fact"><span class="detail-fact-label">Windows-reported signal</span><span class="detail-fact-value" id="page-network-signal">—</span></div>
+   <div class="detail-fact"><span class="detail-fact-label">Speed measurement source</span><span class="detail-fact-value">Windows network counters</span></div>
+  </article></div>
+</section>
+<section class="detail-page" id="detail-history" aria-label="History details" hidden>
+ <div class="detail-heading"><h1>Usage history</h1><p>Saved usage intervals from your existing T-Net history file. No new counters or calculations.</p></div>
+ <article class="card history-card"><div class="card-title"><svg><use href="#i-history"/></svg>Recorded usage intervals</div>
+  <div id="history-records" class="history-empty">No recorded usage intervals available yet.</div>
+ </article>
+</section>
+<section class="detail-page" id="detail-settings" aria-label="Settings" hidden>
+ <div class="detail-heading"><h1>Settings</h1><p>Customize the display and manage application updates without affecting monitoring data.</p></div>
+ <article class="card settings-card"><div class="card-title"><svg><use href="#i-settings"/></svg>Application preferences</div>
+  <div class="setting-item"><div><div class="setting-label">Appearance</div><div class="setting-help">Choose Light, Dark or Auto. Auto follows Windows. Your preference is saved by T-Net.</div></div>
+   <div class="setting-choices" role="group" aria-label="Appearance settings"><button data-setting-theme="light">☀ Light</button><button data-setting-theme="dark">☾ Dark</button><button data-setting-theme="auto">◐ Auto</button></div>
+  </div>
+  <div class="setting-item"><div><div class="setting-label">Application updates</div><div class="setting-help">Check the existing verified GitHub release channel. Your usage records are retained by the updater.</div></div>
+   <button class="setting-action" id="settings-check-updates">Check for updates</button>
+  </div>
+  <div class="setting-item"><div><div class="setting-label">Monitoring source</div><div class="setting-help">The original Windows counter and connected-adapter detection are used. This redesign changes presentation only.</div></div>
+   <span class="detail-fact-value">Windows counters</span>
+  </div>
+ </article>
+</section>
+</main></div></div>
 <div class="demo">T-Net · Windows telemetry</div><div class="toast" id="toast" hidden></div>
 <script>
 (()=>{'use strict';const doc=document,by=(x)=>doc.getElementById(x);const body=doc.body,tm=by('theme-menu'),tb=by('theme-toggle');let chosen='dark',period='weekly';const values={weekly:{max:100,vals:[0,0,0,0,0,0],labels:['','','','','',''],caption:'Waiting for Windows usage records'},daily:{max:100,vals:[0,0,0,0,0,0,0],labels:['','','','','','',''],caption:'Waiting for Windows usage records'},monthly:{max:100,vals:[0,0,0,0,0,0],labels:['','','','','',''],caption:'Waiting for Windows usage records'}};
 function chart(p){const d=values[p],svg=by('usage-svg'),left=66,top=22,bottom=380,right=790,w=right-left,h=bottom-top;let c=`<defs><linearGradient id="barblue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39c0ff"/><stop offset="1" stop-color="#0b68f2"/></linearGradient></defs>`;for(let k=0;k<=5;k++){const y=bottom-k*h/5;c+=`<line x1="${left}" x2="${right}" y1="${y}" y2="${y}" class="gridline"/><text x="${left-12}" y="${y+6}" text-anchor="end" class="axis-text">${Math.round(k*d.max/5).toLocaleString()}</text>`;}c+=`<line x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}" class="axisline"/>`;const n=d.labels.length,step=w/n,width=Math.min(77,step*.7);d.labels.forEach((l,i)=>{const x=left+step*i+step/2,ht=d.vals[i]/d.max*h;c+=`<rect x="${x-width/2}" y="${bottom-ht}" width="${width}" height="${Math.max(0,ht)}" rx="3" fill="url(#barblue)"/>`;c+=`<text x="${x}" y="${bottom+29}" text-anchor="middle" class="axis-text">${l}</text>`});svg.innerHTML=c;by('usage-caption').textContent=d.caption}
 function toast(message){const el=by('toast');el.textContent=message;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3000)}
-function theme(value){chosen=value;const light=value==='light'||value==='auto'&&window.matchMedia('(prefers-color-scheme:light)').matches;body.classList.toggle('light',light);by('theme-symbol').textContent=light?'☀':'☾';doc.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('active',b.dataset.theme===value));tm.hidden=true;tb.setAttribute('aria-expanded','false')}
-tb.onclick=()=>{tm.hidden=!tm.hidden;tb.setAttribute('aria-expanded',String(!tm.hidden))};doc.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>theme(b.dataset.theme));doc.addEventListener('click',e=>{if(!e.target.closest('.theme-wrap')){tm.hidden=true;tb.setAttribute('aria-expanded','false')}});window.matchMedia('(prefers-color-scheme:light)').addEventListener('change',()=>{if(chosen==='auto')theme('auto')});doc.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;doc.querySelectorAll('[data-period]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});by('chart-mode').value='usage';chart(period)});by('chart-mode').onchange=e=>{if(e.target.value==='usage')chart(period);else if(e.target.value==='speed')renderSpeed();else renderLog()};by('last-toggle').onclick=()=>{const el=by('last-detail');el.hidden=!el.hidden;by('last-toggle').setAttribute('aria-expanded',String(!el.hidden))};by('check-updates').onclick=()=>toast('Preview only — no update check was performed');doc.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{doc.querySelectorAll('[data-nav]').forEach(n=>n.classList.toggle('active',n===b));if(b.dataset.nav!=='Dashboard')toast(`${b.dataset.nav}: navigation styling preview — T-Net is not connected`)});
+function theme(value){chosen=value;const light=value==='light'||value==='auto'&&window.matchMedia('(prefers-color-scheme:light)').matches;body.classList.toggle('light',light);by('theme-symbol').textContent=light?'☀':'☾';doc.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('active',b.dataset.theme===value));tm.hidden=true;tb.setAttribute('aria-expanded','false');if(typeof syncAppearanceSettings==='function')syncAppearanceSettings()}
+tb.onclick=()=>{tm.hidden=!tm.hidden;tb.setAttribute('aria-expanded',String(!tm.hidden))};doc.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>theme(b.dataset.theme));doc.addEventListener('click',e=>{if(!e.target.closest('.theme-wrap')){tm.hidden=true;tb.setAttribute('aria-expanded','false')}});window.matchMedia('(prefers-color-scheme:light)').addEventListener('change',()=>{if(chosen==='auto')theme('auto')});doc.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;doc.querySelectorAll('[data-period]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});by('chart-mode').value='usage';chart(period)});by('chart-mode').onchange=e=>{if(e.target.value==='usage')chart(period);else if(e.target.value==='speed')renderSpeed();else renderLog()};by('last-toggle').onclick=()=>{const el=by('last-detail');el.hidden=!el.hidden;by('last-toggle').setAttribute('aria-expanded',String(!el.hidden))};by('check-updates').onclick=()=>toast('Preview only — no update check was performed');
+/* Keep DOM identity of existing metric cards: the chart and network cards are
+   reparented, never cloned, so live readings and event handlers remain intact. */
+const dashboard=doc.querySelector('.workspace');
+const dashboardPrimary=doc.querySelector('.primary');
+const dashboardSecondary=doc.querySelector('.secondary');
+const chartCard=doc.querySelector('.chart-card');
+const networkCard=doc.querySelector('.net-card');
+const summaryCard=doc.querySelector('.summary');
+const pages=new Map([['Usage',by('detail-usage')],['Network',by('detail-network')],['History',by('detail-history')],['Settings',by('detail-settings')]]);
+let activePage='Dashboard';
+function renderHistory(){
+ const el=by('history-records'),rows=actualLogRows.slice().reverse();
+ if(!rows.length){el.className='history-empty';el.textContent='No recorded usage intervals available yet.';return}
+ el.className='';
+ const table=doc.createElement('table');table.className='history-table';
+ const head=doc.createElement('thead'),headRow=doc.createElement('tr');
+ for(const name of ['Recorded interval (WAT)','Download','Upload']){
+   const th=doc.createElement('th');th.textContent=name;headRow.appendChild(th);
+ }
+ head.appendChild(headRow);table.appendChild(head);
+ const tbody=doc.createElement('tbody');
+ for(const row of rows){
+   const tr=doc.createElement('tr');
+   for(const val of [row.time,bytes(row.download),bytes(row.upload)]){
+     const td=doc.createElement('td');td.textContent=String(val??'—');tr.appendChild(td);
+   }
+   tbody.appendChild(tr);
+ }
+ table.appendChild(tbody);el.replaceChildren(table);
+}
+function showPage(name){
+ if(name!=='Dashboard'&&!pages.has(name))return;
+ activePage=name;
+ const dashboardMode=name==='Dashboard';
+ dashboard.hidden=!dashboardMode;
+ for(const [key,node] of pages)node.hidden=key!==name;
+ if(name==='Usage'){
+   by('usage-chart-slot').appendChild(chartCard);
+   by('usage-summary-slot').appendChild(summaryCard);
+ }else if(name==='Network'){
+   by('network-card-slot').appendChild(networkCard);
+ }else if(name==='History'){renderHistory()}
+ if(dashboardMode){
+   dashboardPrimary.appendChild(chartCard);
+   dashboardSecondary.prepend(networkCard);
+   dashboardSecondary.appendChild(summaryCard);
+ }
+ doc.querySelectorAll('[data-nav]').forEach(button=>{
+   const selected=button.dataset.nav===name;
+   button.classList.toggle('active',selected);
+   button.setAttribute('aria-current',selected?'page':'false');
+ });
+ if(name==='Settings')syncAppearanceSettings();
+}
+window.TNetShowPage=showPage;
+function syncAppearanceSettings(){
+ doc.querySelectorAll('[data-setting-theme]').forEach(b=>b.classList.toggle('active',b.dataset.settingTheme===chosen));
+}
+doc.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>showPage(b.dataset.nav));
+doc.querySelectorAll('[data-setting-theme]').forEach(b=>b.onclick=()=>{
+ theme(b.dataset.settingTheme);
+ if(window.chrome&&window.chrome.webview)window.chrome.webview.postMessage(JSON.stringify({action:'appearance',value:b.dataset.settingTheme}));
+});
+by('settings-check-updates').onclick=()=>{
+ if(window.chrome&&window.chrome.webview)window.chrome.webview.postMessage(JSON.stringify({action:'checkUpdates',value:null}));
+ else toast('Design preview only — no update check performed');
+};
+
 
 const speedSamples=[];
 let actualLogRows=[];
@@ -101,9 +239,13 @@ window.TNetBridgeUpdate=(p)=>{
  }
  if(Array.isArray(p.usageLog)){
    actualLogRows=p.usageLog;
+   if(activePage==='History')renderHistory();
    if(by("chart-mode").value==="log")renderLog();
  }
  for(const [k,id] of [["downloadSpeed","live-down"],["uploadSpeed","live-up"],["ssid","live-ssid"],["adapter","live-adapter"],["sampleAge","live-sample"],["timestamp","last-detail"]])if(p[k]!==undefined)by(id).textContent=asText(p[k]);
+ if(p.ssid!==undefined)by('page-network-ssid').textContent=asText(p.ssid);
+ if(p.adapter!==undefined)by('page-network-adapter').textContent=asText(p.adapter);
+ if(p.signalPercent!==undefined)by('page-network-signal').textContent=typeof p.signalPercent==='number'&&p.signalPercent>=0&&p.signalPercent<=100?Math.round(p.signalPercent)+'%':'—';
  if(p.signalPercent!==undefined){
    const valid=typeof p.signalPercent==="number"&&p.signalPercent>=0&&p.signalPercent<=100;
    const val=valid?Math.round(p.signalPercent)+"%":"—";
