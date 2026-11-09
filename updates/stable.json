@@ -1,7 +1,7 @@
 {
-  "version": "6.25.0",
+  "version": "6.26.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.25.0.zip",
-  "sha256": "191307d1aaf5d039e3fc3285647cb091f54ff34b2dc1a0b09997d7915a0db4fd",
-  "notes": "Network layout fix: the Network and Hotspot labels share the same left alignment; fixed layout rows prevent clipping of Last update below the Wi-Fi pulse; clicking the Last update arrow expands the existing live timestamp on a separate row. Decorative inactive scrollbar and all existing monitoring features remain."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.26.0.zip",
+  "sha256": "9cc235b3b4cb1ca649b4e1ea379a4c3b5168f94092f640d4c0b5a2f8ee77d9ca",
+  "notes": "Network layout correction: compact fixed heights to prevent Last update dropdown from being clipped below the ECG Wi-Fi indicator; expandable timestamp appears beneath its arrow; Network and Hotspot share the same left padding and alignment. Decorative scrollbar, Wi-Fi percentage, charts and monitoring engine remain unchanged."
 }
