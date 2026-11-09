@@ -1,4 +1,4 @@
-name: Capture actual running Nordic v6.28 window
+name: Capture actual running Nordic v6.28 window final review
 # Re-render the polished sidebar and Appearance control.
 on:
   push:
