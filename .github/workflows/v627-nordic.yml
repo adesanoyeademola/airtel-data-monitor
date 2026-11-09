@@ -1,0 +1,70 @@
+name: Verify T-Net v6.27 Nordic Canvas
+on:
+  push:
+    branches: [design/nordic-canvas-v627]
+    paths:
+      - '.github/workflows/v627-nordic.yml'
+      - 'release-candidate/patch_v627.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Nordic redesign, verify unchanged engine
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.26.0.zip work
+          $hash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          python release-candidate/patch_v627.py
+          if($LASTEXITCODE -ne 0){throw 'Nordic patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $hash){throw 'Engine altered'}
+          @'
+          from pathlib import Path
+          a=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          b=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for t in ('TrackUsageCheckpoint(', 'UpdateSignalTrayState(',
+                    'new VScrollBar{', 'downloadSpeed.Text=Rate(rateRx)',
+                    'uploadSpeed.Text=Rate(rateTx)',
+                    'MonthTotalFromExistingDays(d)',
+                    'chartViewDropdown.Items.AddRange',
+                    'signalTrayPopup.Deactivate+='):
+              assert t in a and t in b,t
+          for t in ('const string AppVersion = "6.27.0";',
+                    'CreateNordicSidebar()', 'NordicNavButton(',
+                    'nordicSignalMetric=Metric(metrics,"Wi-Fi signal",3);',
+                    'nordicAppearanceStrip.Controls.Add(nordicAutoButton);',
+                    'StyleNordicShell(useLight);',
+                    'middle.Controls.Add(chPanel,0,0);',
+                    'middle.Controls.Add(net,1,0);'):
+              assert t in b,t
+          print('PASS: source regression and Nordic layout checks')
+          '@ | Set-Content work/test_v627.py -Encoding UTF8
+          python work/test_v627.py
+          if($LASTEXITCODE -ne 0){throw 'Regression check failed'}
+      - name: Compile Windows native dashboard
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count){throw 'PowerShell monitor parser failed'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Windows native build missing'}
+      - name: Package preview source and executable
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath work/AirtelMonitor-6.27.0-preview.zip
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1,work/AirtelDataMonitor.exe -DestinationPath work/T-Net-6.27.0-Windows-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v627-nordic-preview
+          path: |
+            work/AirtelMonitor-6.27.0-preview.zip
+            work/T-Net-6.27.0-Windows-preview.zip
+          retention-days: 10
