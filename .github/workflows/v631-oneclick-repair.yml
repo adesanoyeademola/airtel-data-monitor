@@ -54,7 +54,7 @@ jobs:
           if($html.Contains('class="version"') -or $html.Contains('<div class="demo">')){
             throw 'Debug/prototype branding still present'
           }
-          if(!(Select-String 'work/AirtelMonitorNative.cs' -SimpleMatch 'const string AppVersion = "6.31.1";')){
+          if(!(Select-String -Path 'work/AirtelMonitorNative.cs' -SimpleMatch -Pattern 'const string AppVersion = "6.31.1";')){
             throw 'Target build version is not 6.31.1'
           }
       - name: Resolve WebView2 dependencies
