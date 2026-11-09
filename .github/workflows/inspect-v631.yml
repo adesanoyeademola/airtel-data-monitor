@@ -1,0 +1,29 @@
+name: Inspect approved T-Net v6.30 native interface
+on:
+  push:
+    branches: [design/approved-dark-dashboard-v631]
+    paths:
+      - '.github/workflows/inspect-v631.yml'
+permissions:
+  contents: write
+jobs:
+  export-current-source:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract installed baseline UI source for reference-exact redesign
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory diagnostics -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.30.0.zip diagnostics/v630 -Force
+          Copy-Item diagnostics/v630/AirtelMonitorNative.cs diagnostics/nordic-v630-current.cs
+          Write-Host "Baseline UI length: $((Get-Item diagnostics/nordic-v630-current.cs).Length)"
+      - name: Keep source snapshot on the design branch only
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/nordic-v630-current.cs
+          git commit -m 'Capture stable native UI as unmodified reference for redesign'
+          git push origin HEAD:design/approved-dark-dashboard-v631
