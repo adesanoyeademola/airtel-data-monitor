@@ -306,14 +306,14 @@ namespace AirtelMonitorNative {
       middle.RowStyles.Add(new RowStyle(SizeType.Percent,100));
       middle.Controls.Add(metrics,0,0);
       var net=PanelCard();
-      net.Padding=new Padding(15,16,14,16);
+      net.Padding=new Padding(20,18,18,18);
       nordicNetworkPanel=net;
       var layoutNetwork=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,Margin=new Padding(0)};
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,32));
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,76));
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Percent,100));
       layoutNetwork.RowStyles.Add(new RowStyle(SizeType.Absolute,0));
-      var networkTitle=LabelText("Network",17,true);
+      var networkTitle=LabelText("Network",18,true);
       networkTitle.Dock=DockStyle.Fill;
       networkTitle.Margin=new Padding(0);
       networkTitle.TextAlign=ContentAlignment.MiddleLeft;
@@ -523,18 +523,18 @@ namespace AirtelMonitorNative {
       networkDock.RowStyles.Add(new RowStyle(SizeType.Percent,100));
       net.Dock=DockStyle.Fill;
       var usageSummary=PanelCard();
-      usageSummary.Padding=new Padding(15,14,15,12);
+      usageSummary.Padding=new Padding(20,18,20,14);
       var summaryGrid=new TableLayoutPanel{
-        Dock=DockStyle.Top,ColumnCount=2,RowCount=4,Height=186,
+        Dock=DockStyle.Top,ColumnCount=2,RowCount=4,Height=212,
         Margin=new Padding(0),Padding=new Padding(0)
       };
       summaryGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,53));
       summaryGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,47));
-      summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));
-      for(int i=0;i<3;i++)summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,46));
+      summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,48));
+      for(int i=0;i<3;i++)summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,54));
       summaryGrid.Controls.Add(new Label{
-        Text="Usage overview",Dock=DockStyle.Fill,
-        Font=new Font("Segoe UI",14,FontStyle.Bold),
+        Text="≡  Usage overview",Dock=DockStyle.Fill,
+        Font=new Font("Segoe UI",15,FontStyle.Bold),
         ForeColor=ink,TextAlign=ContentAlignment.MiddleLeft},0,0);
       summaryGrid.SetColumnSpan(summaryGrid.GetControlFromPosition(0,0),2);
       string[] summaryTitles={"Today","Last 7 days","This month"};
@@ -561,7 +561,7 @@ namespace AirtelMonitorNative {
       middle.SetRowSpan(networkDock,2);
       Action fitNetworkCard=()=>{
         int available=Math.Max(300,networkDock.ClientSize.Height);
-        networkDock.RowStyles[0].Height=Math.Max(260,Math.Min(380,available-205));
+        networkDock.RowStyles[0].Height=Math.Max(320,Math.Min(430,(int)(available*0.58)));
       };
       networkDock.SizeChanged+=(sender,e)=>fitNetworkCard();
       fitNetworkCard();
@@ -708,13 +708,46 @@ namespace AirtelMonitorNative {
       var save=new Button{Text="Save hotspot",Dock=DockStyle.Fill,Margin=new Padding(5),BackColor=accent,ForeColor=Color.White,FlatStyle=FlatStyle.Flat};save.Click+=(s,e)=>SaveSettings();section.Controls.Add(save,3,1);settings.Controls.Add(section);
       outer.Controls.Add(new Label{Dock=DockStyle.Fill,Text="Monitoring runs while this app is open or minimized to the tray.",ForeColor=muted,TextAlign=ContentAlignment.MiddleLeft,Font=new Font("Segoe UI",9),Margin=new Padding(8,0,0,0)},0,5);
     }
-    Label Metric(TableLayoutPanel parent,string name,int col) {var p=PanelCard();var stack=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2};stack.RowStyles.Add(new RowStyle(SizeType.Percent,40));stack.RowStyles.Add(new RowStyle(SizeType.Percent,60));Color labelColor=name=="Today"?Color.FromArgb(135,115,211):
-        name=="Download speed"?Color.FromArgb(66,149,220):
-        name=="Upload speed"?Color.FromArgb(45,168,127):
-        name=="Wi-Fi signal"?Color.FromArgb(33,167,135):
-        Color.FromArgb(207,149,55);
-      stack.Controls.Add(new Label {Text=name,Dock=DockStyle.Fill,
-        ForeColor=labelColor,TextAlign=ContentAlignment.MiddleLeft},0,0);var val=new Label{Text="0 B",Dock=DockStyle.Fill,ForeColor=ink,Font=new Font("Segoe UI",22,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft};stack.Controls.Add(val,0,1);p.Controls.Add(stack);parent.Controls.Add(p,col,0);return val;}
+    Label Metric(TableLayoutPanel parent,string name,int col){
+      var card=PanelCard();
+      card.Padding=new Padding(18);
+      var contents=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,
+        Margin=new Padding(0),Padding=new Padding(0)};
+      contents.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,75));
+      contents.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+      var iconPanel=new Panel{Size=new Size(62,62),Anchor=AnchorStyles.Left,
+        Margin=new Padding(0),BackColor=Color.Transparent};
+      iconPanel.Paint+=(sender,e)=>{
+        e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+        var green=Color.FromArgb(31,201,145);
+        using(var b=new SolidBrush(Color.FromArgb(14,102,85)))
+          e.Graphics.FillEllipse(b,1,1,59,59);
+        using(var pen=new Pen(green,1.6f))
+          e.Graphics.DrawEllipse(pen,1,1,59,59);
+        using(var pen=new Pen(Color.White,3f)){
+          e.Graphics.DrawArc(pen,13,15,35,30,205,130);
+          e.Graphics.DrawArc(pen,21,23,19,16,205,130);
+        }
+        using(var b=new SolidBrush(Color.White))
+          e.Graphics.FillEllipse(b,28,38,6,6);
+      };
+      var values=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,
+        Margin=new Padding(0),Padding=new Padding(0)};
+      values.RowStyles.Add(new RowStyle(SizeType.Percent,48));
+      values.RowStyles.Add(new RowStyle(SizeType.Percent,52));
+      values.Controls.Add(new Label{Text=name,Dock=DockStyle.Fill,
+        ForeColor=muted,Font=new Font("Segoe UI",10),
+        TextAlign=ContentAlignment.BottomLeft},0,0);
+      var val=new Label{Text="—",Dock=DockStyle.Fill,ForeColor=ink,
+        Font=new Font("Segoe UI",18,FontStyle.Bold),
+        TextAlign=ContentAlignment.MiddleLeft};
+      values.Controls.Add(val,0,1);
+      contents.Controls.Add(iconPanel,0,0);
+      contents.Controls.Add(values,1,0);
+      card.Controls.Add(contents);
+      parent.Controls.Add(card,col,0);
+      return val;
+    }
     Label ArrowSpeedCard(TableLayoutPanel parent,string name,int col,string arrow,Color color){
       var card=PanelCard();
       card.Padding=new Padding(18);
