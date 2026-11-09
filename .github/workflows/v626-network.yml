@@ -41,7 +41,7 @@ jobs:
                        'networkHeader.Padding=new Padding(0);',
                        'hotspotHeader.Padding=new Padding(0);',
                        'detailBar.Enabled=false;',
-                       'signalStrengthTrack.Height=35;'):
+                       'signalStrengthTrack.Height=32;'):
               assert item in b,item
           assert 'detailScroll.Controls.Add(lastUpdateDisclosure);' not in b
           assert 'var pinnedDetails=new FlowLayoutPanel' not in b
