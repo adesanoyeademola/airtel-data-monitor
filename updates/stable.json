@@ -1,7 +1,7 @@
 {
-  "version": "6.26.0",
+  "version": "6.27.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.26.0.zip",
-  "sha256": "9cc235b3b4cb1ca649b4e1ea379a4c3b5168f94092f640d4c0b5a2f8ee77d9ca",
-  "notes": "Network layout correction: compact fixed heights to prevent Last update dropdown from being clipped below the ECG Wi-Fi indicator; expandable timestamp appears beneath its arrow; Network and Hotspot share the same left padding and alignment. Decorative scrollbar, Wi-Fi percentage, charts and monitoring engine remain unchanged."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.27.0.zip",
+  "sha256": "4c38d8cfc7018b82a36797cfebba2d0cb5fc1a495b0a5512eb64f8891b8d8985",
+  "notes": "Nordic Canvas: premium light blue and white Windows dashboard with a left navigation rail, prominent daily usage chart, right-hand network panel, compact four-card summary including live Wi-Fi signal percent, and modern Light/Dark/Auto segmented appearance selector with icons. Existing traffic engine, signal flyout, usage history, and in-app update support retained."
 }
