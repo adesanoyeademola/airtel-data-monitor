@@ -1,7 +1,7 @@
 {
-  "version": "6.20.0",
+  "version": "6.21.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.20.0.zip",
-  "sha256": "0a08a248f2f9efc0dfb7e774b8052331bb9822da28274d3a6e0b6b72624725b0",
-  "notes": "Consolidated update: Light/Dark/Follow Windows appearance modes, refined aligned Appearance selector, compact top-bar download/upload speeds, calendar-month usage based on recorded Windows traffic, rounded dashboard cards, and improved palette. Live Wi-Fi tray popup, permanent scrollbar and monitoring history retained. Carrier-billed Airtel balance is not measured."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.21.0.zip",
+  "sha256": "6acbe4825cee61f9ab73d67db8295f3487a93c8c4d9530d3a89d3a4f3579698c",
+  "notes": "Interface refinement: smaller live download/upload speed indicators with arrows beside Appearance; blinking connection dot aligned with Monitoring Live; clickable Daily, Weekly and Monthly usage charts side by side; additional network details remain below the scroll fold. Previous themes, Wi-Fi popup, counters and saved history preserved."
 }
