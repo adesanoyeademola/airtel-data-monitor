@@ -28,7 +28,7 @@ one('''      ApplyAppearance(true);
       PostApprovedTheme();
     }
     void CheckSystemAppearance(){''')
-if "const string AppVersion = \"6.31.0\";" not in s:raise RuntimeError("Version mismatch")
+if "const string AppVersion = \"6.31.1\";" not in s:raise RuntimeError("Expected approved repair version 6.31.1")
 # Important: None of these edits alter calculations, network APIs, data
 # persistence, adapter matching, history, battery, or the existing updater.
 p.write_text(s,encoding="utf-8")
