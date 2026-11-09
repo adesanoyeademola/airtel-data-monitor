@@ -1,9 +1,9 @@
 name: Verify T-Net v6.29 final Nordic release
 on:
   push:
-    branches: [design/nordic-reference-faithful-v629]
+    branches: [design/nordic-reference-faithful-v628]
     paths:
-      - '.github/workflows/v629-reference-layout.yml'
+      - '.github/workflows/v629-final-nordic.yml'
       - 'release-candidate/patch_v629.py'
   workflow_dispatch:
 permissions:
