@@ -169,6 +169,13 @@ namespace AirtelMonitorNative {
       liveCounterTimer=new System.Threading.Timer(SampleNativeCounters,null,350,1000);
     }
     Label LabelText(string s,int size=11,bool bold=false) { return new Label { Text=s, AutoSize=true, ForeColor=ink, Font=new Font("Segoe UI",size,bold?FontStyle.Bold:FontStyle.Regular), Margin=new Padding(0,0,0,4) }; }
+    void PaintReferenceSidebar(Graphics g,Rectangle bounds){
+      if(bounds.Width<2||bounds.Height<2)return;
+      using(var brush=new LinearGradientBrush(bounds,
+        appearanceIsLight?Color.FromArgb(238,245,255):Color.FromArgb(17,54,110),
+        appearanceIsLight?Color.FromArgb(231,240,253):Color.FromArgb(9,33,73),90f))
+        g.FillRectangle(brush,bounds);
+    }
     Panel PanelCard() {
       var card=new Panel { BackColor=panel, Dock=DockStyle.Fill, Padding=new Padding(18), Margin=new Padding(7),Tag="tnet-card" };
       card.Resize+=(sender,e)=>RoundSurface(card,15);
@@ -2023,10 +2030,10 @@ namespace AirtelMonitorNative {
     }
     Button NordicNavButton(string label,int destination){
       var button=new Button{
-        Text=label,Dock=DockStyle.Top,Height=43,
+        Text=label,Dock=DockStyle.Top,Height=54,
         TextAlign=ContentAlignment.MiddleLeft,FlatStyle=FlatStyle.Flat,
-        Font=new Font("Segoe UI",10),Margin=new Padding(0,0,0,5),
-        Padding=new Padding(13,0,0,0),TabStop=true
+        Font=new Font("Segoe UI",12),Margin=new Padding(0,0,0,10),
+        Padding=new Padding(16,0,0,0),TabStop=true
       };
       button.FlatAppearance.BorderSize=0;
       button.Click+=(sender,e)=>{
@@ -2049,14 +2056,15 @@ namespace AirtelMonitorNative {
     Panel CreateNordicSidebar(){
       var aside=new Panel{Dock=DockStyle.Fill,Padding=new Padding(10,15,10,12),
         BackColor=Color.FromArgb(238,245,255),Tag="nordic-sidebar"};
-      var brand=new Label{Text="◉ T-Net",Dock=DockStyle.None,
-        Location=new Point(12,17),Size=new Size(138,47),
-        Font=new Font("Segoe UI",17,FontStyle.Bold),
-        ForeColor=Color.FromArgb(37,107,220),
-        TextAlign=ContentAlignment.MiddleLeft};
+      aside.Paint+=(sender,e)=>PaintReferenceSidebar(e.Graphics,aside.ClientRectangle);
+      var brand=new Label{Text="▥  T-Net",Dock=DockStyle.None,
+        Location=new Point(20,26),Size=new Size(192,70),
+        Font=new Font("Segoe UI",22,FontStyle.Bold),
+        ForeColor=Color.White,BackColor=Color.FromArgb(12,39,82),
+        TextAlign=ContentAlignment.MiddleLeft,Tag="tnet-brand"};
       aside.Controls.Add(brand);
       var navigation=new Panel{Dock=DockStyle.None,
-        Location=new Point(10,84),Size=new Size(137,260),
+        Location=new Point(15,133),Size=new Size(197,330),
         Margin=new Padding(0),Padding=new Padding(0,8,0,0)};
       // Add in reverse for top dock stacking order.
       navigation.Controls.Add(NordicNavButton("⚙   Settings",4));
@@ -2065,24 +2073,47 @@ namespace AirtelMonitorNative {
       navigation.Controls.Add(NordicNavButton("▥   Usage",1));
       navigation.Controls.Add(NordicNavButton("⌂   Dashboard",0));
       aside.Controls.Add(navigation);
+      navigation.Tag="tnet-navigation";
       navigation.BringToFront();
       brand.BringToFront();
+      aside.Controls.Add(new Label{Text="◉  v6.31.0",Dock=DockStyle.Bottom,Height=59,
+        ForeColor=Color.FromArgb(188,216,250),
+        BackColor=Color.FromArgb(12,39,82),
+        Font=new Font("Segoe UI",10,FontStyle.Bold),
+        TextAlign=ContentAlignment.MiddleCenter,Tag="tnet-version"});
       return aside;
     }
     void StyleNordicShell(bool light){
-      Color blue=Color.FromArgb(44,114,227);
+      Color blue=Color.FromArgb(24,126,251);
       if(nordicSidebar!=null){
-        nordicSidebar.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(18,27,44);
+        nordicSidebar.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+        nordicSidebar.Invalidate();
+        foreach(Control c in nordicSidebar.Controls){
+          string tag=c.Tag as string;
+          if(tag=="tnet-brand"){
+            c.ForeColor=light?Color.FromArgb(44,114,227):Color.White;
+            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+          }
+          if(tag=="tnet-version"){
+            c.ForeColor=light?lightMuted:Color.FromArgb(188,217,255);
+            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+          }
+          if(tag=="tnet-navigation")
+            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+        }
       }
       foreach(var nav in nordicNavButtons){
         if(nav==null)continue;
         bool selected=nav==nordicSelectedNav;
-        nav.ForeColor=selected?blue:(light?lightInk:darkMuted);
+        nav.ForeColor=selected?(light?blue:Color.White):(light?lightInk:Color.FromArgb(227,238,255));
         nav.BackColor=selected?
-          (light?Color.FromArgb(224,236,254):Color.FromArgb(37,57,82)):
-          (light?Color.FromArgb(238,245,255):Color.FromArgb(18,27,44));
+          (light?Color.FromArgb(224,236,254):Color.FromArgb(10,112,240)):
+          (light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82));
+        nav.FlatAppearance.BorderSize=0;
+        nav.Resize+=(sender,e)=>RoundSurface(nav,13);
+        RoundSurface(nav,13);
         nav.FlatAppearance.MouseOverBackColor=light?
-          Color.FromArgb(235,243,255):Color.FromArgb(44,61,86);
+          Color.FromArgb(215,230,253):Color.FromArgb(25,73,137);
       }
       if(nordicAppearanceStrip!=null){
         nordicAppearanceStrip.BackColor=light?
