@@ -1,0 +1,63 @@
+name: Verify T-Net v6.24 expanded network card
+on:
+  push:
+    branches: [feature/network-expanded-v624]
+    paths:
+      - '.github/workflows/v624-network.yml'
+      - 'release-candidate/patch_v624.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply network-only patch and verify saved engine is unchanged
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.23.0.zip work
+          $baseline=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          python release-candidate/patch_v624.py
+          if($LASTEXITCODE -ne 0){throw 'Network patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $baseline){throw 'Monitoring engine changed'}
+          @'
+          from pathlib import Path
+          a=Path("work/Original.cs").read_text(encoding="utf-8-sig")
+          b=Path("work/AirtelMonitorNative.cs").read_text(encoding="utf-8-sig")
+          for item in ('TrackUsageCheckpoint(', 'UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");',
+                       'signalTrayPopup.Deactivate+=','chartViewDropdown.Items.AddRange',
+                       'downloadSpeed.Text=Rate(rateRx)','uploadSpeed.Text=Rate(rateTx)'):
+              assert item in a and item in b,item
+          for item in ('const string AppVersion = "6.24.0";',
+                       'pinnedDetails.Controls.Add(lastUpdateDisclosure);',
+                       'pinnedDetails.Controls.Add(last);',
+                       'detailBar.Enabled=false;',
+                       'signalStrengthTrack.Height=35;'):
+              assert item in b,item
+          assert 'detailScroll.Controls.Add(lastUpdateDisclosure);' not in b
+          print('PASS: original monitoring and network disclosure preservation')
+          '@ | Set-Content work/check_v624.py -Encoding UTF8
+          python work/check_v624.py
+          if($LASTEXITCODE -ne 0){throw 'UI regression test failed'}
+      - name: Compile Windows native application
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $err=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$err)|Out-Null
+          if($err.Count){throw 'PowerShell syntax error'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Compiled executable not found'}
+      - name: Package review source only
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath work/AirtelMonitor-6.24.0-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v624-network-preview
+          path: work/AirtelMonitor-6.24.0-preview.zip
+          retention-days: 10
