@@ -78,44 +78,11 @@ jobs:
           }finally{
             if(!$app.HasExited){Stop-Process -Id $app.Id -Force}
           }
-      - name: Render full-size 1600x900 Windows layout in memory for reference comparison
-        shell: powershell
-        run: |
-          $ErrorActionPreference='Stop'
-          Add-Type -AssemblyName System.Drawing,System.Windows.Forms
-          $assembly=[System.Reflection.Assembly]::LoadFrom((Resolve-Path work/AirtelDataMonitor.exe))
-          $type=$assembly.GetType('AirtelMonitorNative.MainForm',$true)
-          $form=[Activator]::CreateInstance($type,@([bool]$false))
-          try{
-            $form.ShowInTaskbar=$false
-            $form.Show()
-            $form.WindowState=[System.Windows.Forms.FormWindowState]::Normal
-            $form.Size=New-Object System.Drawing.Size(1600,900)
-            $form.PerformLayout()
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 500
-            $image=New-Object System.Drawing.Bitmap(1600,900)
-            try{
-              $bounds=New-Object System.Drawing.Rectangle(0,0,1600,900)
-              $form.DrawToBitmap($image,$bounds)
-              $image.Save('design-reviews/approved-dark-v631-fullsize.png',[System.Drawing.Imaging.ImageFormat]::Png)
-              $thumbnail=New-Object System.Drawing.Bitmap(1120,630)
-              try{
-                $graphics=[System.Drawing.Graphics]::FromImage($thumbnail)
-                try{$graphics.DrawImage($image,0,0,1120,630)}finally{$graphics.Dispose()}
-                $stream=New-Object System.IO.MemoryStream
-                try{
-                  $thumbnail.Save($stream,[System.Drawing.Imaging.ImageFormat]::Jpeg)
-                  [IO.File]::WriteAllText('design-reviews/approved-dark-v631-fullsize-base64.txt',[Convert]::ToBase64String($stream.ToArray()),[Text.Encoding]::ASCII)
-                }finally{$stream.Dispose()}
-              }finally{$thumbnail.Dispose()}
-            }finally{$image.Dispose()}
-          }finally{$form.Close();$form.Dispose()}
       - name: Commit screenshot for UI review
         shell: pwsh
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add design-reviews/approved-dark-v631-actual.png design-reviews/approved-dark-v631-actual-base64.txt design-reviews/approved-dark-v631-fullsize.png design-reviews/approved-dark-v631-fullsize-base64.txt
+          git add design-reviews/approved-dark-v631-actual.png design-reviews/approved-dark-v631-actual-base64.txt
           git commit -m 'Capture running Approved dark v6.31 Windows UI for comparison'
           git push origin HEAD:design/approved-dark-dashboard-v631
