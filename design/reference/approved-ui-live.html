@@ -109,6 +109,26 @@ html.tnet-embedded .metric-value{font-size:25px}
  html.tnet-embedded .summary{min-height:240px}
  html.tnet-embedded .detail-page{overflow:visible}
 }
+
+/* Production dashboard density; intentionally no prototype badges or debug footer. */
+html.tnet-embedded .content{padding:10px 12px 10px!important;gap:10px!important;overflow:hidden!important;scrollbar-gutter:auto}
+html.tnet-embedded .workspace{min-height:0!important;height:100%;gap:12px!important}
+html.tnet-embedded .primary,html.tnet-embedded .secondary{min-height:0!important;gap:12px!important}
+html.tnet-embedded .metrics{min-height:96px!important;gap:12px!important}
+html.tnet-embedded .metric{min-height:96px!important;padding:12px!important;gap:12px!important}
+html.tnet-embedded .chart-card{min-height:0!important;padding:14px 18px 12px!important}
+html.tnet-embedded .net-card{min-height:0!important;padding:15px 20px!important;gap:10px!important}
+html.tnet-embedded .summary{min-height:0!important;padding:15px 20px!important}
+html.tnet-embedded .tabs button{height:44px!important}
+html.tnet-embedded .toolbar{min-height:44px!important}
+html.tnet-embedded .summary-line{min-height:42px!important;height:auto!important}
+html.tnet-embedded .disclosure{height:40px!important}
+html.tnet-embedded .wave{height:42px!important}
+html.tnet-embedded .card-title{padding-bottom:10px!important}
+@media(max-width:1180px), (max-height:700px){
+ html.tnet-embedded .content{overflow:auto!important}
+ html.tnet-embedded .workspace{min-height:580px!important}
+}
 </style>
 </head>
 <body>
@@ -130,8 +150,8 @@ html.tnet-embedded .metric-value{font-size:25px}
 </defs></svg>
 <div class="app">
 <div class="titlebar"><div class="app-icon"><svg width="17" height="17"><use href="#i-wifi"/></svg></div><span>T-Net</span><div class="win-controls" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div></div>
-<div class="body"><aside class="sidebar"><nav class="nav" aria-label="T-Net navigation"><button class="active" data-nav="Dashboard"><svg><use href="#i-home"/></svg>Dashboard</button><button data-nav="Usage"><svg><use href="#i-chart"/></svg>Usage</button><button data-nav="Network"><svg><use href="#i-wifi"/></svg>Network</button><button data-nav="History"><svg><use href="#i-history"/></svg>History</button><button data-nav="Settings"><svg><use href="#i-settings"/></svg>Settings</button></nav><div class="version"><span>ⓘ</span> UI prototype · v6.31</div></aside>
-<main class="content"><header class="toolbar"><div class="live"><span class="live-dot"></span><span id="live-status">Starting monitor…</span></div><div class="appearance-switch" role="group" aria-label="Appearance mode"><button type="button" data-theme="light" aria-pressed="false"><span aria-hidden="true">☀</span> Light</button><button type="button" data-theme="dark" class="active" aria-pressed="true"><span aria-hidden="true">☾</span> Dark</button><button type="button" data-theme="auto" aria-pressed="false"><span aria-hidden="true">◐</span> Auto</button></div><button class="btn" id="check-updates"><svg><use href="#i-sync"/></svg>Check for updates</button></header>
+<div class="body"><aside class="sidebar"><nav class="nav" aria-label="T-Net navigation"><button class="active" data-nav="Dashboard"><svg><use href="#i-home"/></svg>Dashboard</button><button data-nav="Usage"><svg><use href="#i-chart"/></svg>Usage</button><button data-nav="Network"><svg><use href="#i-wifi"/></svg>Network</button><button data-nav="History"><svg><use href="#i-history"/></svg>History</button><button data-nav="Settings"><svg><use href="#i-settings"/></svg>Settings</button></nav></aside>
+<main class="content"><header class="toolbar"><div class="live"><span class="live-dot"></span><span id="live-status">Starting monitor…</span></div><div class="appearance-switch" role="group" aria-label="Appearance mode"><button type="button" data-theme="light" aria-pressed="false"><span aria-hidden="true">&#x2600;</span> Light</button><button type="button" data-theme="dark" class="active" aria-pressed="true"><span aria-hidden="true">&#x263E;</span> Dark</button><button type="button" data-theme="auto" aria-pressed="false"><span aria-hidden="true">&#x25D0;</span> Auto</button></div><button class="btn" id="check-updates"><svg><use href="#i-sync"/></svg>Check for updates</button></header>
 <section class="workspace"><div class="primary"><div class="metrics"><article class="metric card"><div class="metric-icon"><svg><use href="#i-down"/></svg></div><div><div class="metric-label">Download speed</div><div class="metric-value" id="live-down">—</div></div></article><article class="metric card"><div class="metric-icon green"><svg><use href="#i-up"/></svg></div><div><div class="metric-label">Upload speed</div><div class="metric-value" id="live-up">—</div></div></article><article class="metric card"><div class="metric-icon teal"><svg><use href="#i-wifi"/></svg></div><div><div class="metric-label">Wi-Fi signal</div><div class="metric-value signal" id="live-signal">—</div></div></article></div>
 <article class="chart-card card"><div class="tabs" role="tablist" aria-label="Usage time period"><button role="tab" data-period="daily">Daily usage</button><button role="tab" data-period="weekly" class="active" aria-selected="true">Weekly usage</button><button role="tab" data-period="monthly">Monthly usage</button></div><div class="chart-box"><svg id="usage-svg" viewBox="0 0 800 435" aria-label="Example usage chart — preview data only" role="img"></svg></div><div class="chart-footer"><span id="usage-caption">7-day usage: 2.28 GB</span><select class="drop" id="chart-mode" aria-label="Chart view"><option value="usage">Usage chart</option><option value="speed">Live speed</option><option value="log">Usage log</option></select></div></article></div>
 <div class="secondary"><article class="net-card card"><div class="card-title"><svg><use href="#i-network"/></svg>Network<span class="sample" id="live-sample">Last sample: waiting</span></div><div class="info-row"><svg class="info-icon"><use href="#i-wifi"/></svg><span class="info-label">Hotspot</span><span class="info-value" id="live-ssid">—</span></div><div class="source">Live speed source: Windows counters</div><div class="info-row"><svg class="info-icon"><use href="#i-screen"/></svg><span class="info-label">Adapter</span><span class="info-value" id="live-adapter">—</span></div><div class="signal-label">Wi-Fi signal strength</div><div class="signal-layout"><div class="wave"><svg viewBox="0 0 280 49" preserveAspectRatio="none"><path d="M8 25H104 L116 24 L124 19 L135 30 L145 11 L156 35 L168 18 L181 26 L272 25" stroke="#4bf7a1" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/><circle cx="254" cy="25" r="3" fill="#4bf7a1"/></svg></div><div class="percent" id="live-signal-secondary">—</div></div><div><button class="disclosure" id="last-toggle" aria-expanded="false"><svg><use href="#i-chevron"/></svg>Last update</button><div class="timestamp" id="last-detail" hidden>Waiting for a monitor sample</div></div></article>
@@ -160,7 +180,7 @@ html.tnet-embedded .metric-value{font-size:25px}
  <div class="detail-heading"><h1>Settings</h1><p>Customize the display and manage application updates without affecting monitoring data.</p></div>
  <article class="card settings-card"><div class="card-title"><svg><use href="#i-settings"/></svg>Application preferences</div>
   <div class="setting-item"><div><div class="setting-label">Appearance</div><div class="setting-help">Choose Light, Dark or Auto. Auto follows Windows. Your preference is saved by T-Net.</div></div>
-   <div class="setting-choices" role="group" aria-label="Appearance settings"><button data-setting-theme="light">☀ Light</button><button data-setting-theme="dark">☾ Dark</button><button data-setting-theme="auto">◐ Auto</button></div>
+   <div class="setting-choices" role="group" aria-label="Appearance settings"><button data-setting-theme="light">&#x2600; Light</button><button data-setting-theme="dark">&#x263E; Dark</button><button data-setting-theme="auto">&#x25D0; Auto</button></div>
   </div>
   <div class="setting-item"><div><div class="setting-label">Application updates</div><div class="setting-help">Check the existing verified GitHub release channel. Your usage records are retained by the updater.</div></div>
    <button class="setting-action" id="settings-check-updates">Check for updates</button>
@@ -171,7 +191,7 @@ html.tnet-embedded .metric-value{font-size:25px}
  </article>
 </section>
 </main></div></div>
-<div class="demo">T-Net · Windows telemetry</div><div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden></div>
 <script>
 (()=>{'use strict';const doc=document,by=(x)=>doc.getElementById(x);const body=doc.body;let chosen='dark',period='weekly';const values={weekly:{max:100,vals:[0,0,0,0,0,0],labels:['','','','','',''],caption:'Waiting for Windows usage records'},daily:{max:100,vals:[0,0,0,0,0,0,0],labels:['','','','','','',''],caption:'Waiting for Windows usage records'},monthly:{max:100,vals:[0,0,0,0,0,0],labels:['','','','','',''],caption:'Waiting for Windows usage records'}};
 function chart(p){const d=values[p],svg=by('usage-svg'),left=66,top=22,bottom=380,right=790,w=right-left,h=bottom-top;let c=`<defs><linearGradient id="barblue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39c0ff"/><stop offset="1" stop-color="#0b68f2"/></linearGradient></defs>`;for(let k=0;k<=5;k++){const y=bottom-k*h/5;c+=`<line x1="${left}" x2="${right}" y1="${y}" y2="${y}" class="gridline"/><text x="${left-12}" y="${y+6}" text-anchor="end" class="axis-text">${Math.round(k*d.max/5).toLocaleString()}</text>`;}c+=`<line x1="${left}" x2="${right}" y1="${bottom}" y2="${bottom}" class="axisline"/>`;const n=d.labels.length,step=w/n,width=Math.min(77,step*.7);d.labels.forEach((l,i)=>{const x=left+step*i+step/2,ht=d.vals[i]/d.max*h;c+=`<rect x="${x-width/2}" y="${bottom-ht}" width="${width}" height="${Math.max(0,ht)}" rx="3" fill="url(#barblue)"/>`;c+=`<text x="${x}" y="${bottom+29}" text-anchor="middle" class="axis-text">${l}</text>`});svg.innerHTML=c;by('usage-caption').textContent=d.caption}
@@ -337,7 +357,7 @@ window.TNetBridgeUpdate=(p)=>{
    if(by("chart-mode").value==="usage")chart(period);
  }
  if(p.theme==="light"||p.theme==="dark"||p.theme==="auto"||p.theme==="system")theme(p.theme);
- doc.querySelector(".demo").textContent="Actual Windows counters · T-Net";
+ /* No debug footer in production UI. */
 };
 const host=window.chrome&&window.chrome.webview;
 if(host){
@@ -349,7 +369,7 @@ if(host){
  by("chart-mode").addEventListener("change",()=>send("chartMode",by("chart-mode").value));
  host.addEventListener("message",e=>{let x=e.data;if(typeof x==="string")try{x=JSON.parse(x)}catch{return}window.TNetBridgeUpdate(x)});
  send("ready");
-}else doc.querySelector(".demo").textContent="Design-only preview · not connected to your laptop";
+}else{/* Standalone preview: no host bridge. */}
 chart("weekly")})();
 </script>
 </body></html>
