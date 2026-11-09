@@ -3,7 +3,7 @@ on:
   push:
     branches: [fix/nordic-layout-light-v630]
     paths:
-      - '.github/workflows/v630-final-nordic.yml'
+      - '.github/workflows/v630-light-layout.yml'
       - 'release-candidate/patch_v630.py'
   workflow_dispatch:
 permissions:
