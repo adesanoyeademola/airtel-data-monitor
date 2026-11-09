@@ -228,6 +228,23 @@ one('''    void ShowAppearanceMenu(){
       appearanceMenu.Show(appearanceButton,new Point(0,appearanceButton.Height+3));
     }''')
 
+
+# The reference's actions and period selectors are rounded pills, not the
+# original square WinForms buttons. Retain all existing click handlers.
+one('''      graphHeader.Controls.Add(monthUsageButton,2,0);''',
+'''      graphHeader.Controls.Add(monthUsageButton,2,0);
+      foreach(var tab in new[]{dayUsageButton,weekUsageButton,monthUsageButton}){
+        tab.FlatAppearance.BorderSize=0;
+        tab.Resize+=(sender,e)=>RoundSurface(tab,12);
+        RoundSurface(tab,12);
+      }''')
+one('''      updateButton.Font=new Font("Segoe UI",9,FontStyle.Regular);
+      ShapeAppearanceButton();''',
+'''      updateButton.Font=new Font("Segoe UI",9,FontStyle.Regular);
+      updateButton.Resize+=(sender,e)=>RoundSurface(updateButton,12);
+      RoundSurface(updateButton,12);
+      ShapeAppearanceButton();''')
+
 # Option 02 uses white cards with a clean, lightly outlined border.
 one('''using(var pen=new Pen(Color.FromArgb(211,224,237),1))''',
 '''using(var pen=new Pen(Color.FromArgb(223,233,248),1))''')
