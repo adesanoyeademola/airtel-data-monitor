@@ -1,7 +1,7 @@
 name: Verify T-Net v6.25 expanded network card
 on:
   push:
-    branches: [feature/network-expanded-v625]
+    branches: [feature/network-disclosure-alignment-v625]
     paths:
       - '.github/workflows/v625-network.yml'
       - 'release-candidate/patch_v625.py'
