@@ -1,7 +1,7 @@
 {
-  "version": "6.27.0",
+  "version": "6.28.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.27.0.zip",
-  "sha256": "4c38d8cfc7018b82a36797cfebba2d0cb5fc1a495b0a5512eb64f8891b8d8985",
-  "notes": "Nordic Canvas: premium light blue and white Windows dashboard with a left navigation rail, prominent daily usage chart, right-hand network panel, compact four-card summary including live Wi-Fi signal percent, and modern Light/Dark/Auto segmented appearance selector with icons. Existing traffic engine, signal flyout, usage history, and in-app update support retained."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.28.0.zip",
+  "sha256": "1f06aa5c3dc217c990a3c0636e8ca05090a3a029638ecc8e2f110dad56fce454",
+  "notes": "Option 02 Nordic Canvas layout correction: T-Net brand fixed at top of soft-blue navigation rail, three compact Download/Upload/Wi-Fi tiles above a wide usage chart, full-height Network panel at right, modern rounded chart tabs and updates action, compact Appearance dropdown with segmented Light/Dark/Auto choices, responsive signal strength and proper blank-state placeholder. Existing data and monitoring engine preserved."
 }
