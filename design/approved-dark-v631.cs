@@ -183,10 +183,16 @@ namespace AirtelMonitorNative {
       card.Paint+=(sender,e)=>{
         if(card.Width<5||card.Height<5)return;
         e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
-        using(var path=RoundedPath(new Rectangle(1,1,card.Width-3,card.Height-3),20))
-        using(var pen=new Pen(appearanceIsLight?
-          Color.FromArgb(219,230,247):Color.FromArgb(49,77,122),1.1f))
-          e.Graphics.DrawPath(pen,path);
+        using(var path=RoundedPath(new Rectangle(1,1,card.Width-3,card.Height-3),20)){
+          using(var brush=new LinearGradientBrush(
+            new Rectangle(0,0,Math.Max(1,card.Width),Math.Max(1,card.Height)),
+            appearanceIsLight?Color.White:Color.FromArgb(28,55,95),
+            appearanceIsLight?Color.FromArgb(249,252,255):Color.FromArgb(17,35,64),62f))
+            e.Graphics.FillPath(brush,path);
+          using(var pen=new Pen(appearanceIsLight?
+            Color.FromArgb(219,230,247):Color.FromArgb(49,85,137),1.1f))
+            e.Graphics.DrawPath(pen,path);
+        }
       };
       return card;
     }
@@ -765,7 +771,7 @@ namespace AirtelMonitorNative {
         using(var pen=new Pen(color,1.6f))
           e.Graphics.DrawEllipse(pen,1,1,59,59);
       };
-      var arrowLabel=new Label{Text=arrow,Location=new Point(11,6),
+      var arrowLabel=new Label{Text=arrow,Tag="tnet-icon-arrow",Location=new Point(11,6),
         Size=new Size(40,48),Margin=new Padding(0,5,0,0),
         BackColor=Color.Transparent,ForeColor=Color.White,
         TextAlign=ContentAlignment.MiddleCenter,
@@ -2015,6 +2021,7 @@ namespace AirtelMonitorNative {
       StyleAppearanceControls(this,useLight);
       StyleSelectedUsagePeriod();
       StyleNordicShell(useLight);
+      StyleApprovedVisuals(this,useLight);
       if(chart!=null && chart.Series.Count>0){
         chart.Series[0].Color=useLight?Color.FromArgb(57,132,241):Color.FromArgb(12,143,255);
         chart.Series[0].BackGradientStyle=GradientStyle.TopBottom;
@@ -2110,7 +2117,7 @@ namespace AirtelMonitorNative {
       var brand=new Label{Text="▥  T-Net",Dock=DockStyle.None,
         Location=new Point(20,26),Size=new Size(192,70),
         Font=new Font("Segoe UI",22,FontStyle.Bold),
-        ForeColor=Color.White,BackColor=Color.FromArgb(12,39,82),
+        ForeColor=Color.White,BackColor=Color.Transparent,
         TextAlign=ContentAlignment.MiddleLeft,Tag="tnet-brand"};
       aside.Controls.Add(brand);
       var navigation=new Panel{Dock=DockStyle.None,
@@ -2128,10 +2135,18 @@ namespace AirtelMonitorNative {
       brand.BringToFront();
       aside.Controls.Add(new Label{Text="◉  v6.31.0",Dock=DockStyle.Bottom,Height=59,
         ForeColor=Color.FromArgb(188,216,250),
-        BackColor=Color.FromArgb(12,39,82),
+        BackColor=Color.Transparent,
         Font=new Font("Segoe UI",10,FontStyle.Bold),
         TextAlign=ContentAlignment.MiddleCenter,Tag="tnet-version"});
       return aside;
+    }
+    void StyleApprovedVisuals(Control c,bool light){
+      if(c.Tag is string && (string)c.Tag=="tnet-icon-arrow"){
+        c.ForeColor=Color.White;
+        c.BackColor=Color.Transparent;
+      }
+      foreach(Control child in c.Controls)
+        StyleApprovedVisuals(child,light);
     }
     void StyleNordicShell(bool light){
       Color blue=Color.FromArgb(24,126,251);
@@ -2142,14 +2157,14 @@ namespace AirtelMonitorNative {
           string tag=c.Tag as string;
           if(tag=="tnet-brand"){
             c.ForeColor=light?Color.FromArgb(44,114,227):Color.White;
-            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+            c.BackColor=Color.Transparent;
           }
           if(tag=="tnet-version"){
             c.ForeColor=light?lightMuted:Color.FromArgb(188,217,255);
-            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+            c.BackColor=Color.Transparent;
           }
           if(tag=="tnet-navigation")
-            c.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(12,39,82);
+            c.BackColor=Color.Transparent;
         }
       }
       foreach(var nav in nordicNavButtons){
