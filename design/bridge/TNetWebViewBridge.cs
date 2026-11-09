@@ -16,6 +16,7 @@ namespace AirtelMonitorNative {
     bool approvedDashboardReady = false;
     Dictionary<string,object> lastApprovedSample;
     DateTime lastHistorySentUtc=DateTime.MinValue;
+    DateTime lastLogSentUtc=DateTime.MinValue;
 
     async void StartApprovedWebView() {
       string path=Path.Combine(root,"approved-ui-live.html");
@@ -149,6 +150,41 @@ namespace AirtelMonitorNative {
         }
         payload["days"]=records;
         lastHistorySentUtc=DateTime.UtcNow;
+      }
+      if(forceHistory || (DateTime.UtcNow-lastLogSentUtc).TotalSeconds>=15){
+        var logRows=new List<Dictionary<string,object>>();
+        try{
+          if(File.Exists(usageLogPath)){
+            var recent=new Queue<string>();
+            foreach(var line in File.ReadLines(usageLogPath)){
+              if(String.IsNullOrWhiteSpace(line) || line==UsageLogHeader)continue;
+              recent.Enqueue(line);
+              if(recent.Count>20)recent.Dequeue();
+            }
+            foreach(string line in recent){
+              string[] parts=line.Split(',');
+              if(parts.Length!=7)continue;
+              double down,up;
+              if(!Double.TryParse(parts[2],NumberStyles.Float,
+                 CultureInfo.InvariantCulture,out down))continue;
+              if(!Double.TryParse(parts[3],NumberStyles.Float,
+                 CultureInfo.InvariantCulture,out up))continue;
+              DateTimeOffset timestamp;
+              string label=parts[1];
+              if(DateTimeOffset.TryParse(parts[1],CultureInfo.InvariantCulture,
+                 DateTimeStyles.RoundtripKind,out timestamp))
+                label=timestamp.ToOffset(TimeSpan.FromHours(1)).ToString(
+                  "dd MMM HH:mm",CultureInfo.InvariantCulture)+" WAT";
+              logRows.Add(new Dictionary<string,object>{
+                {"time",label},{"download",down},{"upload",up}
+              });
+            }
+          }
+        }catch(Exception ex){
+          System.Diagnostics.Debug.WriteLine("UI log view: "+ex.Message);
+        }
+        payload["usageLog"]=logRows;
+        lastLogSentUtc=DateTime.UtcNow;
       }
       PostApproved(payload);
     }
