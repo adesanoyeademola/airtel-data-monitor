@@ -33,8 +33,8 @@ jobs:
           @'
           from pathlib import Path
           c=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8')
-          html=Path('work/approved-ui-live.html').read_text()
-          bridge=Path('work/TNetWebViewBridge.cs').read_text()
+          html=Path('work/approved-ui-live.html').read_text(encoding='utf-8')
+          bridge=Path('work/TNetWebViewBridge.cs').read_text(encoding='utf-8')
           for item in ('public partial class MainForm : Form','StartApprovedWebView();','PushApprovedTelemetry(d);',
                        'UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");',
                        'downloadSpeed.Text=Rate(rateRx)',
