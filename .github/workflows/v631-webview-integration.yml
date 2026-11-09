@@ -109,6 +109,18 @@ jobs:
               if($app.HasExited){throw 'T-Net exited before its modern UI was rendered'}
             }
             if(!$complete){throw 'The actual embedded UI did not render a screenshot'}
+            # WebView2 writes asynchronously; wait until its file handle closes.
+            $unlocked=$false
+            for($retry=0;$retry -lt 30;$retry++){
+              try{
+                $reader=[IO.File]::Open($capture,[IO.FileMode]::Open,
+                  [IO.FileAccess]::Read,[IO.FileShare]::Read)
+                try{if($reader.Length -gt 1024){$unlocked=$true;break}}
+                finally{$reader.Dispose()}
+              }catch{}
+              Start-Sleep -Milliseconds 250
+            }
+            if(!$unlocked){throw 'Rendered image remained locked or empty'}
             New-Item -ItemType Directory design-reviews -Force | Out-Null
             Copy-Item $capture design-reviews/approved-v631-webview-runtime.png
             Add-Type -AssemblyName System.Drawing
