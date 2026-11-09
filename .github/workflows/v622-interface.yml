@@ -1,0 +1,69 @@
+name: Verify T-Net v6.22 interface refinements
+on:
+  push:
+    branches: [feature/usage-tabs-pulse-v622]
+    paths:
+      - '.github/workflows/v622-interface.yml'
+      - 'release-candidate/patch_v622.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply interface patch to stable v6.21 source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.21.0.zip work
+          $hash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/baseline.cs
+          python release-candidate/patch_v622.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $hash){throw 'Monitoring engine changed'}
+          @'
+          from pathlib import Path
+          old=Path('work/baseline.cs').read_text(encoding='utf-8-sig')
+          new=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for token in ('TrackUsageCheckpoint(','new VScrollBar{',
+                        'signalTrayPopup.Deactivate+=',
+                        'downloadSpeed.Text=Rate(rateRx)',
+                        'uploadSpeed.Text=Rate(rateTx)',
+                        'UpdateSignalTrayState(stat,Str(d,"adapterName"),Str(d,"wifiSignal"));'):
+              assert token in old and token in new,token
+          for token in ('const string AppVersion = "6.22.0";',
+                        'void DrawSignalPulse(Graphics g,Rectangle bounds,int? signalPercent)',
+                        'downloadArrowMoving=stat=="tracking"',
+                        'uploadArrowMoving=stat=="tracking"',
+                        'graphHeader.Controls.Add(dayUsageButton,0,0)',
+                        'graphHeader.Controls.Add(weekUsageButton,1,0)',
+                        'graphHeader.Controls.Add(monthUsageButton,2,0)',
+                        'void UpdateUsageCaption()'):
+              assert token in new,token
+          assert 'week=Metric(metrics,"7-day usage",3)' not in new
+          assert 'monthly=Metric(metrics,"This month",4)' not in new
+          print('PASS: requested layout and monitoring invariants verified')
+          '@ | Set-Content work/check_v622.py -Encoding UTF8
+          python work/check_v622.py
+          if($LASTEXITCODE -ne 0){throw 'Regression checks failed'}
+      - name: Compile native WinForms application on Windows
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$parseErrors)|Out-Null
+          if($parseErrors.Count){throw 'PowerShell syntax errors'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Compiled executable missing'}
+      - name: Upload source preview only
+        shell: pwsh
+        run: |
+          Compress-Archive work/AirtelMonitorNative.cs,work/monitor.ps1 work/AirtelMonitor-6.22.0-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v622-interface-preview
+          path: work/AirtelMonitor-6.22.0-preview.zip
+          retention-days: 10
