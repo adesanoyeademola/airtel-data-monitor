@@ -1,0 +1,107 @@
+name: Verify approved T-Net UI with Windows telemetry bridge
+on:
+  push:
+    branches: [design/approved-dark-dashboard-v631]
+    paths:
+      - 'design/reference/approved-ui-live.html'
+      - 'design/bridge/**'
+      - 'design/approved-dark-v631.cs'
+      - '.github/workflows/v631-webview-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-approved-interface:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare untouched v6.30 monitor and approved UI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.30.0.zip work
+          $hash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item design/approved-dark-v631.cs work/AirtelMonitorNative.cs -Force
+          Copy-Item design/bridge/TNetWebViewBridge.cs work/TNetWebViewBridge.cs
+          Copy-Item design/reference/approved-ui-live.html work/approved-ui-live.html
+          python design/bridge/patch_webview_shell.py
+          if($LASTEXITCODE -ne 0){throw 'Bridge patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $hash){
+            throw 'Original monitoring engine was changed'
+          }
+          @'
+          from pathlib import Path
+          c=Path('work/AirtelMonitorNative.cs').read_text()
+          html=Path('work/approved-ui-live.html').read_text()
+          bridge=Path('work/TNetWebViewBridge.cs').read_text()
+          for item in ('public partial class MainForm : Form','StartApprovedWebView();','PushApprovedTelemetry(d);',
+                       'UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");',
+                       'downloadSpeed.Text=Rate(rateRx)',
+                       'uploadSpeed.Text=Rate(rateTx)',
+                       'MonthTotalFromExistingDays(d)',
+                       'TrackUsageCheckpoint('):
+              assert item in c,item
+          for item in ('window.TNetBridgeUpdate','id="live-down"','id="live-up"',
+                       'id="live-signal"','id="live-seven"','id="live-month"'):
+              assert item in html,item
+          for item in ('CoreWebView2.WebMessageReceived','PostWebMessageAsJson','EnsureCoreWebView2Async',
+                       'approvedDashboard.Visible=false','case "checkUpdates"'):
+              assert item in bridge,item
+          assert '190.8 MB</span>' not in html
+          assert '<span class="info-value">GLOBAL</span>' not in html
+          print('PASS: no preview sample measurements; live values come from native engine')
+          '@ | Set-Content work/verify_bridge.py -Encoding UTF8
+          python work/verify_bridge.py
+          if($LASTEXITCODE -ne 0){throw 'Bridge verification failed'}
+      - name: Resolve official Microsoft WebView2 SDK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          nuget install Microsoft.Web.WebView2 -Version 1.0.4314.35 -OutputDirectory packages -NonInteractive
+          $dir=(Get-ChildItem packages -Directory -Filter 'Microsoft.Web.WebView2.*' | Select-Object -First 1).FullName
+          if(!$dir){throw 'WebView2 NuGet SDK was not installed'}
+          $wf=Get-ChildItem $dir -Recurse -File -Filter 'Microsoft.Web.WebView2.WinForms.dll' | Where-Object {$_.FullName -match 'net462'} | Select-Object -First 1
+          $core=Get-ChildItem $dir -Recurse -File -Filter 'Microsoft.Web.WebView2.Core.dll' | Where-Object {$_.FullName -match 'net462'} | Select-Object -First 1
+          if(!$wf -or !$core){throw 'Could not locate .NET Framework WebView2 SDK'}
+          Copy-Item $wf.FullName work/Microsoft.Web.WebView2.WinForms.dll
+          Copy-Item $core.FullName work/Microsoft.Web.WebView2.Core.dll
+          $loader=Get-ChildItem $dir -Recurse -File -Filter 'WebView2Loader.dll' | Where-Object {$_.FullName -match 'win-x64|x64'} | Select-Object -First 1
+          if(!$loader){throw 'WebView2 x64 loader is absent'}
+          Copy-Item $loader.FullName work/WebView2Loader.dll
+      - name: Compile Windows EXE and original PowerShell monitor
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$parseErrors)|Out-Null
+          if($parseErrors.Count){throw 'Original monitor has syntax errors'}
+          $framework=@('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll',
+            'System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll',
+            'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll')
+          $web=@((Resolve-Path 'work/Microsoft.Web.WebView2.Core.dll').Path,
+                 (Resolve-Path 'work/Microsoft.Web.WebView2.WinForms.dll').Path)
+          Add-Type -Path @('work/AirtelMonitorNative.cs','work/TNetWebViewBridge.cs') -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies ($framework + $web) -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'T-Net Windows executable missing'}
+      - name: Validate frontend JavaScript parses without browser dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $html=Get-Content work/approved-ui-live.html -Raw
+          $match=[regex]::Match($html,'(?s)<script>(.*?)</script>')
+          if(!$match.Success){throw 'UI script not found'}
+          Set-Content work/approved-ui-script.js $match.Groups[1].Value -Encoding UTF8
+          node --check work/approved-ui-script.js
+          if($LASTEXITCODE -ne 0){throw 'UI JavaScript failed parsing'}
+      - name: Package isolated preview only
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelDataMonitor.exe,work/monitor.ps1,
+            work/approved-ui-live.html,work/Microsoft.Web.WebView2.Core.dll,
+            work/Microsoft.Web.WebView2.WinForms.dll,work/WebView2Loader.dll,
+            work/TNetWebViewBridge.cs,work/AirtelMonitorNative.cs -DestinationPath work/T-Net-6.31.0-Design-Preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v631-webview2-preview-not-stable
+          path: work/T-Net-6.31.0-Design-Preview.zip
+          retention-days: 14
