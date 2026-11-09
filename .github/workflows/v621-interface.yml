@@ -42,7 +42,7 @@ jobs:
                        'dayUsageButton=UsagePeriodButton("Daily usage",0);',
                        'weekUsageButton=UsagePeriodButton("Weekly usage",3);',
                        'monthUsageButton=UsagePeriodButton("Monthly usage",4);',
-                       'detailsRevealSpacer.Height=viewportHeight+12;'):
+                       'if(detailsRevealSpacer!=null)detailsRevealSpacer.Height=viewportHeight+12;'):
               assert item in b,'New feature missing: '+item
           print('PASS: existing monitoring, UI flyout and user records preserved')
           '@ | Set-Content work/check_v621.py -Encoding UTF8
