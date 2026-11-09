@@ -64,7 +64,7 @@ namespace AirtelMonitorNative {
             PostApprovedTheme();
             if(lastApprovedSample!=null)PushApprovedTelemetry(lastApprovedSample,true);
             break;
-          case "checkUpdates": _=CheckUpdates(false); break;
+          case "checkUpdates": CheckUpdates(false); break;
           case "appearance":
             if(value=="light"||value=="dark"||value=="system")
               SelectAppearance(value);
