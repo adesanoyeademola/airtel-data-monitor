@@ -32,7 +32,7 @@ jobs:
           }
           @'
           from pathlib import Path
-          c=Path('work/AirtelMonitorNative.cs').read_text()
+          c=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8')
           html=Path('work/approved-ui-live.html').read_text()
           bridge=Path('work/TNetWebViewBridge.cs').read_text()
           for item in ('public partial class MainForm : Form','StartApprovedWebView();','PushApprovedTelemetry(d);',
