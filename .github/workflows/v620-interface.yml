@@ -43,7 +43,7 @@ jobs:
                     'void ApplyAppearance(bool force)','AppsUseLightTheme',
                     'appearance.txt','const string AppVersion = "6.20.0";',
                     'MonthTotalFromExistingDays(d)','head.Controls.Add(compactSpeeds,1,0)',
-                    'RoundSurface(card,15)']::
+                    'RoundSurface(card,15)']:
               assert q in b,q
           assert a.count('UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");') == b.count('UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");')
           print("PASS: appearance changes retain existing monitoring and flyout hooks")
