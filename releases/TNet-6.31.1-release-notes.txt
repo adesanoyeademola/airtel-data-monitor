@@ -1,0 +1,1 @@
+T-Net v6.31.1 one-click verified repair; AppData-targeted install, backup and rollback, clean appearance symbols, no debug badges, native WebView2 UI-updates.\nInstaller SHA256: e6531a5beb9b25e44b3d752beacc77bb401289688c81d1e4c9109f3984f9ecf2
