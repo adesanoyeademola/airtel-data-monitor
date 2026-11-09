@@ -2,7 +2,7 @@ name: Capture actual Nordic v6.30 layout
 # Re-render the polished sidebar and Appearance control.
 on:
   push:
-    branches: [design/nordic-reference-faithful-v630]
+    branches: [fix/nordic-layout-light-v630]
     paths: [.github/workflows/v630-running-window.yml]
 permissions:
   contents: write
