@@ -1,0 +1,69 @@
+name: Verify T-Net v6.23 UI refinement
+on:
+  push:
+    branches: [feature/layout-refinement-v623]
+    paths:
+      - '.github/workflows/v623-interface.yml'
+      - 'release-candidate/patch_v623.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-validation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch v6.22 source with preserved monitoring engine
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.22.0.zip work
+          $monitorHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/original.cs
+          python release-candidate/patch_v623.py
+          if($LASTEXITCODE -ne 0){throw 'UI patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $monitorHash){throw 'Monitoring engine changed'}
+          @'
+          from pathlib import Path
+          old=Path('work/original.cs').read_text(encoding='utf-8-sig')
+          new=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for token in ('TrackUsageCheckpoint(','new VScrollBar{',
+                        'signalTrayPopup.Deactivate+=',
+                        'UpdateSignalTrayState(stat,Str(d,"adapterName"),Str(d,"wifiSignal"));',
+                        'DownloadSpeed' if False else 'downloadSpeed.Text=Rate(rateRx)',
+                        'uploadSpeed.Text=Rate(rateTx)'):
+              assert token in old and token in new,token
+          for token in ('const string AppVersion = "6.23.0";',
+                        'down=ArrowSpeedCard(', 'up=ArrowSpeedCard(',
+                        'headerActions.Controls.SetChildIndex(updateButton,1)',
+                        'chartViewDropdown.Items.AddRange',
+                        'lastUpdateDisclosure.Text=last.Visible',
+                        'graphHeader.Controls.Add(dayUsageButton,0,0)',
+                        'graphHeader.Controls.Add(monthUsageButton,2,0)'):
+              assert token in new,token
+          assert 'CompactSpeedPill(headerActions,"↓"' not in new
+          assert 'CompactSpeedPill(headerActions,"↑"' not in new
+          assert 'Text="Scroll for more details"' not in new
+          print('PASS v6.23 source and non-destructive monitoring invariants')
+          '@ | Set-Content work/verify_v623.py -Encoding UTF8
+          python work/verify_v623.py
+          if($LASTEXITCODE -ne 0){throw 'Source regression failed'}
+      - name: Compile native Windows UI and validate syntax
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $err=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$err)|Out-Null
+          if($err.Count){throw 'Engine has parse errors'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Native executable missing'}
+      - name: Upload preview source
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath work/AirtelMonitor-6.23.0-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v623-preview
+          path: work/AirtelMonitor-6.23.0-preview.zip
+          retention-days: 10
