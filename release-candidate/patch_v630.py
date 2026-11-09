@@ -21,21 +21,70 @@ replace_one('''      var outer=new TableLayoutPanel { Dock=DockStyle.Fill, Colum
 # scroll decoration but let the card wrap its actual content height.
 replace_one('''      middle.Controls.Add(net,1,0);
       middle.SetRowSpan(net,2);''',
-'''      var networkDock=new Panel{
-        Dock=DockStyle.Fill,Margin=new Padding(0),Padding=new Padding(0),
+'''      var networkDock=new TableLayoutPanel{
+        Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,
+        Margin=new Padding(0),Padding=new Padding(0),
         BackColor=bg
       };
-      net.Dock=DockStyle.Top;
-      net.Height=414;
-      networkDock.Controls.Add(net);
+      networkDock.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+      networkDock.RowStyles.Add(new RowStyle(SizeType.Absolute,330));
+      networkDock.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+      net.Dock=DockStyle.Fill;
+      var usageSummary=PanelCard();
+      usageSummary.Padding=new Padding(15,14,15,12);
+      var summaryGrid=new TableLayoutPanel{
+        Dock=DockStyle.Top,ColumnCount=2,RowCount=4,Height=186,
+        Margin=new Padding(0),Padding=new Padding(0)
+      };
+      summaryGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,53));
+      summaryGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,47));
+      summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));
+      for(int i=0;i<3;i++)summaryGrid.RowStyles.Add(new RowStyle(SizeType.Absolute,46));
+      summaryGrid.Controls.Add(new Label{
+        Text="Usage overview",Dock=DockStyle.Fill,
+        Font=new Font("Segoe UI",14,FontStyle.Bold),
+        ForeColor=ink,TextAlign=ContentAlignment.MiddleLeft},0,0);
+      summaryGrid.SetColumnSpan(summaryGrid.GetControlFromPosition(0,0),2);
+      string[] summaryTitles={"Today","Last 7 days","This month"};
+      var summaryValues=new List<Label>();
+      for(int i=0;i<3;i++){
+        summaryGrid.Controls.Add(new Label{
+          Text=summaryTitles[i],Dock=DockStyle.Fill,
+          Font=new Font("Segoe UI",10),
+          ForeColor=muted,TextAlign=ContentAlignment.MiddleLeft},0,i+1);
+        var value=new Label{
+          Text="0 B",Dock=DockStyle.Fill,
+          Font=new Font("Segoe UI",11,FontStyle.Bold),
+          ForeColor=ink,TextAlign=ContentAlignment.MiddleRight};
+        summaryValues.Add(value);
+        summaryGrid.Controls.Add(value,1,i+1);
+      }
+      nordicTodayStat=summaryValues[0];
+      nordicWeekStat=summaryValues[1];
+      nordicMonthStat=summaryValues[2];
+      usageSummary.Controls.Add(summaryGrid);
+      networkDock.Controls.Add(net,0,0);
+      networkDock.Controls.Add(usageSummary,0,1);
       middle.Controls.Add(networkDock,1,0);
       middle.SetRowSpan(networkDock,2);
       Action fitNetworkCard=()=>{
-        int maxHeight=Math.Max(260,networkDock.ClientSize.Height-12);
-        net.Height=Math.Min(414,maxHeight);
+        int available=Math.Max(300,networkDock.ClientSize.Height);
+        networkDock.RowStyles[0].Height=Math.Max(260,Math.Min(380,available-205));
       };
       networkDock.SizeChanged+=(sender,e)=>fitNetworkCard();
       fitNetworkCard();''')
+
+
+replace_one('''    Label nordicSignalMetric;''',
+'''    Label nordicSignalMetric;
+    Label nordicTodayStat,nordicWeekStat,nordicMonthStat;''')
+replace_one('''        latestMonthConsumed=MonthTotalFromExistingDays(d);
+        today.Text=Bytes(latestTodayConsumed);''',
+'''        latestMonthConsumed=MonthTotalFromExistingDays(d);
+        if(nordicTodayStat!=null)nordicTodayStat.Text=Bytes(latestTodayConsumed);
+        if(nordicWeekStat!=null)nordicWeekStat.Text=Bytes(latestSevenDayConsumed);
+        if(nordicMonthStat!=null)nordicMonthStat.Text=Bytes(latestMonthConsumed);
+        today.Text=Bytes(latestTodayConsumed);''')
 
 # Let a no-data reading show a neutral dash, but don't obscure real Wi-Fi
 # values or the existing ECG status. The distinct activity colors remain.
@@ -60,7 +109,8 @@ for expected in [
     'const string AppVersion = "6.30.0";',
     'Padding=new Padding(11,11,11,29)',
     'middle.SetRowSpan(networkDock,2);',
-    'net.Height=Math.Min(414,maxHeight);',
+    'nordicMonthStat.Text=Bytes(latestMonthConsumed)',
+    'networkDock.RowStyles[0].Height=Math.Max(260,Math.Min(380,available-205));',
     'graphLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));',
     'chartViewDropdown.Items.AddRange',
     'UpdateSignalDisplay(Str(d,"wifiSignal"),stat=="tracking");',
@@ -71,4 +121,4 @@ for expected in [
 ]:
     if expected not in s:raise RuntimeError("Required feature missing: "+expected)
 p.write_text(s,encoding="utf-8")
-print("PASS: Nordic v6.30 layout safe-area and compact Network card patch; engine unmodified")
+print("PASS: Nordic v6.30 footer, Network card and real-data usage overview; monitoring engine unchanged")
