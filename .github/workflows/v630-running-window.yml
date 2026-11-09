@@ -78,4 +78,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add design-reviews/nordic-v630-actual.png design-reviews/nordic-v630-actual-base64.txt
           git commit -m 'Capture running Nordic v6.30 Windows UI for comparison'
-          git push origin HEAD:design/nordic-reference-faithful-v630
+          git push origin HEAD:fix/nordic-layout-light-v630
