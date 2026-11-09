@@ -27,18 +27,37 @@ namespace AirtelMonitorNative {
         Controls.Add(approvedDashboard);
         approvedDashboard.BringToFront();
         // A missing WebView2 Runtime triggers the native fallback.
-        await approvedDashboard.EnsureCoreWebView2Async();
+        // Store WebView2 browser data in the user's writable profile.
+        string profile=Path.Combine(Environment.GetFolderPath(
+          Environment.SpecialFolder.LocalApplicationData),"T-Net","WebView2");
+        Directory.CreateDirectory(profile);
+        var environment=await CoreWebView2Environment.CreateAsync(null,profile);
+        await approvedDashboard.EnsureCoreWebView2Async(environment);
         approvedDashboard.CoreWebView2.Settings.AreDevToolsEnabled=false;
         approvedDashboard.CoreWebView2.Settings.AreDefaultContextMenusEnabled=false;
         approvedDashboard.CoreWebView2.Settings.IsStatusBarEnabled=false;
         approvedDashboard.CoreWebView2.WebMessageReceived+=ApprovedMessage;
-        approvedDashboard.NavigationCompleted+=(sender,args)=>{
+        approvedDashboard.NavigationCompleted+=async (sender,args)=>{
           if(!args.IsSuccess)return;
           approvedDashboardReady=true;
           approvedDashboard.Visible=true;
           approvedDashboard.BringToFront();
           PostApprovedTheme();
           if(lastApprovedSample!=null)PushApprovedTelemetry(lastApprovedSample,true);
+          // Build-only review hook; disabled in normal installations.
+          string screenshot=Environment.GetEnvironmentVariable("TNET_DESIGN_CAPTURE_PATH");
+          if(!String.IsNullOrWhiteSpace(screenshot)){
+            try{
+              await System.Threading.Tasks.Task.Delay(1000);
+              Directory.CreateDirectory(Path.GetDirectoryName(screenshot));
+              using(var output=File.Create(screenshot)){
+                await approvedDashboard.CoreWebView2.CapturePreviewAsync(
+                  CoreWebView2CapturePreviewImageFormat.Png,output);
+              }
+            }catch(Exception ex){
+              System.Diagnostics.Debug.WriteLine("Design QA screenshot failed: "+ex.Message);
+            }
+          }
         };
         approvedDashboard.Source=new Uri(path);
       }catch(Exception ex){
