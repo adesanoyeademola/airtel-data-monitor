@@ -1,0 +1,166 @@
+name: Build and publish T-Net 6.31.1 one-click repair
+on:
+  push:
+    branches: [design/approved-v631-final-controls]
+    paths:
+      - 'installer/TNetOneClickRepair.cs'
+      - 'design/approved-dark-v631.cs'
+      - 'design/bridge/TNetWebViewBridge.cs'
+      - 'design/bridge/patch_webview_shell.py'
+      - 'design/reference/approved-ui-live.html'
+      - '.github/workflows/v631-oneclick-repair.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: tnet-oneclick-publish
+  cancel-in-progress: false
+jobs:
+  build-verify-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout stable publication branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: publisher
+          persist-credentials: true
+      - name: Checkout approved repair source
+        uses: actions/checkout@v4
+        with:
+          ref: design/approved-v631-final-controls
+          path: source
+          persist-credentials: false
+      - name: Prepare original monitoring engine and fixed UI
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive ../publisher/releases/AirtelMonitor-6.30.0.zip work
+          $engineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item design/approved-dark-v631.cs work/AirtelMonitorNative.cs -Force
+          Copy-Item design/bridge/TNetWebViewBridge.cs work/TNetWebViewBridge.cs -Force
+          Copy-Item design/reference/approved-ui-live.html work/approved-ui-live.html -Force
+          python design/bridge/patch_webview_shell.py
+          if($LASTEXITCODE -ne 0){throw 'WebView integration failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineHash){throw 'Monitoring engine altered'}
+          $html=Get-Content work/approved-ui-live.html -Raw -Encoding UTF8
+          foreach($check in @('window.TNetBridgeUpdate','function showPage(name)','appearance-switch',
+            'html.tnet-embedded .titlebar{display:none!important}',
+            '&#x2600;','&#x263E;','&#x25D0;')){
+            if(!$html.Contains($check)){throw "Missing approved UI check: $check"}
+          }
+          if($html.Contains('class="version"') -or $html.Contains('<div class="demo">')){
+            throw 'Debug/prototype branding still present'
+          }
+          if(!(Select-String 'work/AirtelMonitorNative.cs' -SimpleMatch 'const string AppVersion = "6.31.1";')){
+            throw 'Target build version is not 6.31.1'
+          }
+      - name: Resolve WebView2 dependencies
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          nuget install Microsoft.Web.WebView2 -Version 1.0.4314.35 -OutputDirectory packages -NonInteractive
+          $dir=(Get-ChildItem packages -Directory -Filter 'Microsoft.Web.WebView2.*' | Select-Object -First 1).FullName
+          $wf=Get-ChildItem $dir -Recurse -File -Filter 'Microsoft.Web.WebView2.WinForms.dll' | Where-Object {$_.FullName -match 'net462'} | Select-Object -First 1
+          $core=Get-ChildItem $dir -Recurse -File -Filter 'Microsoft.Web.WebView2.Core.dll' | Where-Object {$_.FullName -match 'net462'} | Select-Object -First 1
+          $loader=Get-ChildItem $dir -Recurse -File -Filter 'WebView2Loader.dll' | Where-Object {$_.FullName -match 'win-x64|x64'} | Select-Object -First 1
+          if(!$wf -or !$core -or !$loader){throw 'WebView2 binaries missing'}
+          Copy-Item $wf.FullName work/Microsoft.Web.WebView2.WinForms.dll
+          Copy-Item $core.FullName work/Microsoft.Web.WebView2.Core.dll
+          Copy-Item $loader.FullName work/WebView2Loader.dll
+      - name: Compile and validate Windows application
+        shell: powershell
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$errors)|Out-Null
+          if($errors.Count){throw 'Original monitoring engine syntax failed'}
+          $framework=@('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll',
+            'System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll',
+            'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll')
+          $web=@((Resolve-Path 'work/Microsoft.Web.WebView2.Core.dll').Path,
+            (Resolve-Path 'work/Microsoft.Web.WebView2.WinForms.dll').Path)
+          Add-Type -Path @('work/AirtelMonitorNative.cs','work/TNetWebViewBridge.cs') -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies ($framework + $web) -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Compiled Windows application missing'}
+      - name: Validate main UI script
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          $html=Get-Content work/approved-ui-live.html -Raw -Encoding UTF8
+          $scripts=[regex]::Matches($html,'(?s)<script[^>]*>(.*?)</script>')
+          if($scripts.Count -lt 2){throw 'Expected preloader and application script'}
+          foreach($i in @(0,1)){
+            [IO.File]::WriteAllText((Join-Path (Resolve-Path work).Path "script-$i.js"),
+              $scripts[$i].Groups[1].Value,[Text.UTF8Encoding]::new($false))
+            node --check "work/script-$i.js"
+            if($LASTEXITCODE -ne 0){throw "JavaScript validation failed for script $i"}
+          }
+      - name: Assemble pinned repair payload and compile native one-click installer
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          $paths=@('work/AirtelDataMonitor.exe','work/approved-ui-live.html',
+            'work/Microsoft.Web.WebView2.Core.dll','work/Microsoft.Web.WebView2.WinForms.dll','work/WebView2Loader.dll')
+          Compress-Archive -Path $paths -DestinationPath work/TNetUI-6.31.1-payload.zip -Force
+          $sha=(Get-FileHash work/TNetUI-6.31.1-payload.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $source=Get-Content installer/TNetOneClickRepair.cs -Raw -Encoding UTF8
+          if(!$source.Contains('__PAYLOAD_SHA256__')){throw 'One-click installer not parameterized'}
+          $source=$source.Replace('__PAYLOAD_SHA256__',$sha)
+          [IO.File]::WriteAllText((Join-Path (Resolve-Path work).Path 'TNetOneClickRepair.build.cs'),
+            $source,[Text.UTF8Encoding]::new($false))
+          $refs=@('System.dll','System.Core.dll','System.Windows.Forms.dll','System.Drawing.dll',
+            'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll')
+          Add-Type -Path work/TNetOneClickRepair.build.cs -OutputAssembly work/TNet-OneClick-Repair-6.31.1.exe -OutputType WindowsApplication -ReferencedAssemblies $refs -ErrorAction Stop
+          if(!(Test-Path work/TNet-OneClick-Repair-6.31.1.exe)){throw 'Repair program missing'}
+      - name: Run actual installer against disposable install and check preservation
+        shell: pwsh
+        working-directory: source
+        run: |
+          $ErrorActionPreference='Stop'
+          $app=(Resolve-Path 'work/TNet-OneClick-Repair-6.31.1.exe').Path
+          $zip=(Resolve-Path 'work/TNetUI-6.31.1-payload.zip').Path
+          $run=Start-Process -FilePath $app -ArgumentList @('--selftest', ('"'+$zip+'"')) -Wait -PassThru
+          if($run.ExitCode -ne 0){throw "Self-test failed: $($run.ExitCode)"}
+          Write-Host 'PASS: one-click upgrade, backup and protected usage/history preservation'
+      - name: Publish repaired Windows payload, one-click EXE and UI feed
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $manifest=Get-Content publisher/updates/stable.json -Raw | ConvertFrom-Json
+          if($manifest.version -ne '6.30.0'){throw "Stable version changed ($($manifest.version)); release not safe"}
+          Copy-Item source/work/TNetUI-6.31.1-payload.zip publisher/releases/TNetUI-6.31.1-payload.zip
+          Copy-Item source/work/TNet-OneClick-Repair-6.31.1.exe publisher/releases/TNet-OneClick-Repair-6.31.1.exe
+          Copy-Item source/work/approved-ui-live.html publisher/releases/approved-ui-live-6.31.1.html
+          $uiSha=(Get-FileHash publisher/releases/approved-ui-live-6.31.1.html -Algorithm SHA256).Hash.ToLowerInvariant()
+          $installerSha=(Get-FileHash publisher/releases/TNet-OneClick-Repair-6.31.1.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          $ui=[ordered]@{
+            version='6.31.1'
+            uiUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/approved-ui-live-6.31.1.html'
+            uiSha256=$uiSha
+          }
+          [IO.File]::WriteAllText('publisher/updates/ui.json',($ui|ConvertTo-Json -Depth 3),[Text.UTF8Encoding]::new($false))
+          $publishNotes="T-Net v6.31.1 one-click verified repair; AppData-targeted install, backup and rollback, clean appearance symbols, no debug badges, native WebView2 UI-updates."
+          [IO.File]::WriteAllText('publisher/releases/TNet-6.31.1-release-notes.txt',
+            $publishNotes+"\nInstaller SHA256: "+$installerSha,[Text.UTF8Encoding]::new($false))
+          Set-Location publisher
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add releases/TNetUI-6.31.1-payload.zip releases/TNet-OneClick-Repair-6.31.1.exe releases/approved-ui-live-6.31.1.html releases/TNet-6.31.1-release-notes.txt updates/ui.json
+          git diff --cached --quiet
+          if($LASTEXITCODE -ne 0){
+            git commit -m 'Publish verified one-click T-Net 6.31.1 repair and in-app UI update feed'
+            if($LASTEXITCODE -ne 0){throw 'Publication commit failed'}
+            git push origin HEAD:main
+            if($LASTEXITCODE -ne 0){throw 'Publishing repair assets failed'}
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: T-Net-6.31.1-one-click-executable
+          path: source/work/TNet-OneClick-Repair-6.31.1.exe
+          retention-days: 14
