@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>T-Net · Approved Dark UI Design Prototype</title>
+<script>if(window.chrome&&window.chrome.webview)document.documentElement.classList.add('tnet-embedded');</script>
 <style>
 :root{font-family:'Segoe UI',Inter,system-ui,sans-serif;font-synthesis:none;--bg:#09172c;--sidebar-top:#173f7a;--sidebar-bottom:#102c59;--main:#0b172e;--card:#172d50;--card2:#10213d;--border:#375886;--text:#f6f9ff;--muted:#d0dcf2;--subtle:#91aacc;--chip:#21375a;--chip-active:#0787f5;--pill:#1c365a;--line:#30486c;--blue:#179cfe;--blue2:#0d66ed;--green:#41fa83;--shadow:rgba(0,0,0,.15);--callout:#12294a}
 *{box-sizing:border-box}body{margin:0;background:#020a15;color:var(--text)}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:2px solid #68caff;outline-offset:3px}.app{width:100%;height:100vh;min-height:720px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}.titlebar{height:38px;flex:none;background:linear-gradient(105deg,#e8f0ff,#f6f8ff);color:#1b2435;display:flex;align-items:center;gap:9px;padding:0 14px;font-size:15px}.titlebar .app-icon{width:23px;height:23px;border-radius:6px;background:#e7335c;display:grid;place-items:center;color:white}.win-controls{margin-left:auto;display:flex;align-items:center;gap:26px;color:#17253b}.win-controls span{width:19px;text-align:center}.body{flex:1;display:flex;min-height:0;overflow:hidden}.sidebar{width:249px;flex:none;background:linear-gradient(145deg,var(--sidebar-top),var(--sidebar-bottom));border-right:1px solid #2c508b;display:flex;flex-direction:column;padding:23px 13px 26px;position:relative}.sidebar:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 18% 12%,rgba(23,131,255,.13),transparent 52%);pointer-events:none}.brand{z-index:1;display:flex;align-items:center;gap:15px;margin:3px 18px 41px;color:#fff;font-size:30px;font-weight:750;letter-spacing:-.8px}.brand-icon{color:#9cc6ff;width:41px;height:43px;filter:drop-shadow(0 0 5px #2788ff)}.nav{z-index:1;display:grid;gap:10px}.nav button{width:100%;height:62px;border:none;background:transparent;color:#ebf2ff;display:flex;align-items:center;text-align:left;gap:18px;padding:0 21px;border-radius:13px;font-size:18px;font-weight:500;transition:background .18s}.nav button svg{width:25px;height:25px;stroke-width:1.8}.nav button.active{background:linear-gradient(110deg,#0763f2,#129bf9);color:white;box-shadow:inset 0 1px rgba(255,255,255,.21),0 7px 17px rgba(0,48,127,.22);font-weight:650}.nav button:not(.active):hover{background:#244c87}.version{z-index:1;margin:auto 30px 0;padding:11px 16px;border:1px solid #6389c1;border-radius:30px;background:#21457f;color:#dcecff;text-align:center;font-size:16px;display:flex;align-items:center;justify-content:center;gap:9px}.content{flex:1;min-width:0;display:flex;flex-direction:column;padding:19px 19px 28px 16px;background:radial-gradient(ellipse at 26% 0%,#112849 0,var(--main) 59%);gap:19px}.toolbar{min-height:60px;display:flex;align-items:center;justify-content:flex-end;gap:18px;padding-left:8px}.live{display:flex;align-items:center;gap:11px;color:#62f790;font-weight:600;font-size:18px;margin-right:22px;white-space:nowrap}.live-dot{height:16px;width:16px;border-radius:50%;background:#41ed67;box-shadow:0 0 12px rgba(57,240,111,.4);animation:breath 2s ease-in-out infinite}@keyframes breath{50%{opacity:.65;box-shadow:0 0 3px #37e46d}}.btn{background:linear-gradient(#203a66,#1a2f54);border:1px solid #3c5e92;border-radius:14px;min-height:48px;padding:0 19px;font-size:17px;font-weight:580;display:flex;align-items:center;gap:12px;white-space:nowrap;box-shadow:inset 0 1px rgba(255,255,255,.07)}.btn:hover{background:#284974}.btn svg{width:22px;height:22px}.theme-wrap{position:relative}.theme-menu{position:absolute;top:56px;right:0;z-index:15;border-radius:15px;background:#183053;border:1px solid #4366a0;padding:7px;display:flex;gap:5px;box-shadow:0 15px 40px rgba(0,0,0,.35)}.theme-menu[hidden]{display:none}.theme-menu button{border:0;background:transparent;padding:10px 13px;border-radius:9px;color:#eaf4ff;font-size:14px;white-space:nowrap}.theme-menu button.active{background:#1374e7;color:white}.workspace{display:grid;grid-template-columns:minmax(0,1.83fr) minmax(360px,1fr);gap:18px;flex:1;min-height:0}.primary,.secondary{min-width:0;min-height:0;display:flex;flex-direction:column;gap:17px}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-height:129px}.card{background:linear-gradient(120deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:18px;box-shadow:0 6px 15px var(--shadow),inset 0 1px rgba(255,255,255,.035)}.metric{min-height:130px;padding:18px;display:flex;align-items:center;gap:18px;min-width:0}.metric-icon{width:64px;height:64px;flex:none;border:1.5px solid #1684ff;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 32% 18%,#176abd,#0c4c9d);box-shadow:inset 0 0 13px #177ce74d}.metric-icon.green{border-color:#30bc62;background:radial-gradient(circle at 30% 25%,#178b59,#0e523c)}.metric-icon.teal{border-color:#1bab91;background:radial-gradient(circle at 30% 25%,#0a8066,#084839)}.metric-icon svg{height:34px;width:34px;stroke:white;stroke-width:2.3}.metric-label{font-size:16px;color:var(--muted);white-space:nowrap}.metric-value{font-size:29px;line-height:1.1;font-weight:760;margin-top:11px;letter-spacing:.1px;white-space:nowrap}.metric-value.signal{color:var(--green)}.chart-card{flex:1;min-height:0;display:flex;flex-direction:column;padding:21px 29px 24px;overflow:hidden}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.tabs button{height:48px;border:0;border-radius:12px;background:var(--chip);font-size:17px;font-weight:520;color:var(--text)}.tabs button.active{background:linear-gradient(105deg,#008cf5,#116dec);box-shadow:0 0 0 1px #19b4ff inset;color:#fff}.chart-box{flex:1;min-height:0;padding:16px 0 0;position:relative}.chart-box svg{width:100%;height:100%;display:block;overflow:visible}.axis-text{font-size:16px;fill:var(--text);font-family:'Segoe UI',sans-serif}.gridline{stroke:var(--line);stroke-width:1}.axisline{stroke:#b3d0ff;stroke-width:1.4}.bar-gradient-start{stop-color:#35beff}.bar-gradient-end{stop-color:#1165f5}.chart-footer{height:47px;flex:none;display:flex;align-items:end;justify-content:space-between;gap:12px;font-size:16px;color:var(--muted)}.drop{background:linear-gradient(#253e66,#1c3152);border:1px solid #5678a6;border-radius:12px;min-width:157px;height:46px;color:var(--text);padding:0 14px;font-size:16px}.net-card{min-height:0;flex:1.28;display:flex;flex-direction:column;padding:24px 27px 22px;gap:16px}.card-title{display:flex;align-items:center;gap:14px;font-weight:760;font-size:26px;letter-spacing:-.2px;padding-bottom:18px;border-bottom:1px solid var(--line)}.card-title svg{height:30px;width:30px;color:#89c1ff}.sample{margin-left:auto;font-size:14px;color:var(--muted);font-weight:400;white-space:nowrap;letter-spacing:0}.info-row{display:flex;align-items:center;gap:13px;min-height:39px;color:var(--text)}.info-icon{height:26px;width:26px;color:#9ec7ff;flex:none}.info-label{font-size:17px;color:var(--muted)}.info-value{font-weight:750;font-size:19px;margin-left:12px}.source{margin:0 0 2px 40px;font-size:15px;color:#39e79d;font-weight:560}.signal-label{font-size:17px;margin-top:3px}.signal-layout{display:flex;align-items:center;gap:17px;min-width:0}.wave{flex:1;height:49px;border:1px solid #46668c;border-radius:13px;background:#213954;overflow:hidden;min-width:0}.wave svg{height:100%;width:100%}.percent{flex:none;padding:7px 16px;border:1px solid #36e96c;background:#153e2e;color:#b9ffd1;border-radius:25px;font-size:19px;font-weight:750}.disclosure{width:100%;height:48px;border:0;background:#23395b;color:var(--text);border-radius:10px;padding:0 15px;display:flex;align-items:center;gap:13px;text-align:left;font-size:17px}.disclosure svg{height:16px;width:16px;transform:rotate(-90deg);transition:transform .15s}.disclosure[aria-expanded=true] svg{transform:rotate(0)}.timestamp{padding:12px 16px 7px;background:var(--callout);border-radius:0 0 10px 10px;color:var(--muted);font-size:14px;overflow-wrap:anywhere}.timestamp[hidden]{display:none}.summary{flex:.82;min-height:0;padding:21px 27px 19px;display:flex;flex-direction:column}.summary .card-title{font-size:24px;padding-bottom:16px}.summary-line{height:calc((100% - 58px)/3);min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid var(--line);font-size:18px}.summary-line:last-child{border-bottom:none}.summary-name{display:flex;align-items:center;gap:16px;color:var(--muted)}.summary-name svg{width:24px;height:24px;color:#d5e5ff}.summary-number{font-weight:760;font-size:20px;white-space:nowrap}.demo{position:fixed;bottom:6px;right:10px;z-index:3;font-size:11px;color:#8ba5cb;opacity:.75;pointer-events:none}.toast{position:fixed;right:25px;bottom:38px;background:#0f3768;border:1px solid #5088cb;color:white;padding:15px 20px;border-radius:12px;box-shadow:0 10px 40px #0009;z-index:30;font-size:14px}.toast[hidden]{display:none}
@@ -58,6 +59,56 @@ body.light .appearance-switch button{color:#4f6988}
 body.light .appearance-switch button:hover:not(.active){background:#d2e4fc;color:#1e518b}
 body.light .appearance-switch button.active{color:#fff}
 @media(max-width:1100px){.toolbar{gap:9px}.live{margin-right:4px;font-size:15px}.appearance-switch button{padding:0 8px;font-size:13px}.btn{font-size:14px;padding:0 10px}}
+
+/* v6.31.1 layout-only repair: WebView2 sits below a REAL Windows title bar.
+   Do not render the old prototype title bar or its decorative window buttons. */
+html.tnet-embedded .titlebar{display:none!important}
+html.tnet-embedded .app{min-height:0;height:100dvh}
+html.tnet-embedded .body{min-height:0}
+html.tnet-embedded .content{min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-bottom:15px}
+html.tnet-embedded .workspace{min-height:620px}
+html.tnet-embedded .sidebar{padding-top:16px;padding-bottom:15px}
+html.tnet-embedded .nav button{height:56px}
+html.tnet-embedded .version{margin-top:auto}
+html.tnet-embedded .toolbar{min-height:49px;gap:11px;flex-wrap:wrap}
+html.tnet-embedded .chart-card{min-height:340px}
+html.tnet-embedded .net-card{min-height:305px}
+html.tnet-embedded .summary{min-height:195px}
+html.tnet-embedded .metric{min-height:105px}
+html.tnet-embedded .metrics{min-height:105px}
+html.tnet-embedded .metric-icon{width:54px;height:54px}
+html.tnet-embedded .metric-icon svg{width:29px;height:29px}
+html.tnet-embedded .metric-value{font-size:25px}
+@media(max-height:850px){
+ html.tnet-embedded .content{gap:10px;padding-top:10px}
+ html.tnet-embedded .workspace{min-height:640px;gap:12px}
+ html.tnet-embedded .primary,html.tnet-embedded .secondary{gap:12px}
+ html.tnet-embedded .metric{padding:12px}
+ html.tnet-embedded .chart-card{padding:15px 18px}
+ html.tnet-embedded .net-card{padding:15px 18px;gap:9px}
+ html.tnet-embedded .summary{padding:14px 18px}
+ html.tnet-embedded .card-title{padding-bottom:9px}
+ html.tnet-embedded .summary-line{min-height:42px}
+}
+@media(max-width:1450px){
+ html.tnet-embedded .sidebar{width:205px}
+ html.tnet-embedded .content{padding-left:12px;padding-right:12px}
+ html.tnet-embedded .workspace{grid-template-columns:minmax(0,1.55fr) minmax(310px,1fr);gap:12px}
+ html.tnet-embedded .metric{padding:10px;gap:9px}
+ html.tnet-embedded .metric-icon{width:47px;height:47px}
+ html.tnet-embedded .metric-label{font-size:13px}
+ html.tnet-embedded .metric-value{font-size:22px}
+ html.tnet-embedded .info-label{font-size:15px}
+ html.tnet-embedded .info-value{font-size:16px}
+}
+@media(max-width:1120px){
+ html.tnet-embedded .workspace{grid-template-columns:1fr;overflow:visible;min-height:0}
+ html.tnet-embedded .primary,html.tnet-embedded .secondary{min-height:0}
+ html.tnet-embedded .chart-card{min-height:400px}
+ html.tnet-embedded .net-card{min-height:330px}
+ html.tnet-embedded .summary{min-height:240px}
+ html.tnet-embedded .detail-page{overflow:visible}
+}
 </style>
 </head>
 <body>
