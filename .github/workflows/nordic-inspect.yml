@@ -1,0 +1,27 @@
+name: Inspect T-Net Nordic baseline
+on:
+  push:
+    branches: [design/nordic-canvas-v627]
+    paths: [.github/workflows/nordic-inspect.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.26.0.zip work
+          $s=Get-Content work/AirtelMonitorNative.cs -Raw
+          foreach($pair in @(@('Panel PanelCard()', 'void BuildUi()'),@('void BuildUi()', 'void CreateSignalTrayPopup()'),@('void ApplyAppearance(bool force)', 'void ShapeAppearanceButton()'))){
+            $a=$s.IndexOf($pair[0])
+            $b=$s.IndexOf($pair[1],$a+5)
+            if($a -ge 0){
+              Write-Host "==START $($pair[0])=="
+              if($b -lt 0){$b=[Math]::Min($s.Length,$a+22000)}
+              Write-Host $s.Substring($a,[Math]::Min(24000,$b-$a))
+              Write-Host "==END=="
+            }
+          }
