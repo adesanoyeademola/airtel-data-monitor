@@ -1,7 +1,7 @@
 {
-  "version": "6.21.0",
+  "version": "6.22.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.21.0.zip",
-  "sha256": "6acbe4825cee61f9ab73d67db8295f3487a93c8c4d9530d3a89d3a4f3579698c",
-  "notes": "Interface refinement: smaller live download/upload speed indicators with arrows beside Appearance; blinking connection dot aligned with Monitoring Live; clickable Daily, Weekly and Monthly usage charts side by side; additional network details remain below the scroll fold. Previous themes, Wi-Fi popup, counters and saved history preserved."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.22.0.zip",
+  "sha256": "18c61d36d527a3f549b52998f85c5dfd806f389082f23df3e8cf5309e30b9e8a",
+  "notes": "Interface refinement: matching Daily, Weekly and Monthly usage controls beside Live speed and Usage log; selected period total shown in chart footer; old 7-day and monthly metric cards replaced by download and upload speed cards; Wi-Fi signal shown with ECG-style pulse and unchanged Windows percentage; download/upload arrows animate only while reported speed is above 0.0 Kbps. Monitoring engine and historical data preserved."
 }
