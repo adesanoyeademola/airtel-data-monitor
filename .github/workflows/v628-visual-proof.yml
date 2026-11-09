@@ -1,0 +1,53 @@
+name: Render Nordic v6.28 visual proof
+on:
+  push:
+    branches: [design/nordic-reference-faithful-v628]
+    paths: [.github/workflows/v628-visual-proof.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  screenshot:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source without touching monitoring engine
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.27.0.zip work
+          python release-candidate/patch_v628.py
+          if($LASTEXITCODE -ne 0){throw 'Source patch failed'}
+      - name: Render actual Windows Forms UI to image
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          Add-Type -AssemblyName System.Windows.Forms,System.Drawing
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/TNetPreview.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          $asm=[System.Reflection.Assembly]::LoadFrom((Resolve-Path work/TNetPreview.exe))
+          $form=$asm.GetType('AirtelMonitorNative.MainForm').GetConstructor([Type[]]@([bool])).Invoke(@($false))
+          try{
+            $form.Size=[System.Drawing.Size]::new(1420,800)
+            $form.CreateControl()
+            $form.PerformLayout()
+            foreach($child in $form.Controls){$child.PerformLayout()}
+            $bmp=New-Object System.Drawing.Bitmap(1420,800)
+            $rect=[System.Drawing.Rectangle]::new(0,0,1420,800)
+            $form.DrawToBitmap($bmp,$rect)
+            New-Item -ItemType Directory design-reviews -Force | Out-Null
+            $bmp.Save((Join-Path (Get-Location) 'design-reviews/nordic-v628-winform.png'),[System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+          }finally{$form.Dispose()}
+      - name: Save visual proof on design branch
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add design-reviews/nordic-v628-winform.png
+          git commit -m 'Add actual WinForms Nordic v6.28 rendered layout for visual review'
+          git push origin HEAD:design/nordic-reference-faithful-v628
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nordic-v628-visual-proof
+          path: design-reviews/nordic-v628-winform.png
+          retention-days: 10
