@@ -1,0 +1,26 @@
+name: Diagnose Network v625 layout
+on:
+  push:
+    branches: [fix/network-layout-v626]
+    paths: [.github/workflows/diagnose-network-v626.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.25.0.zip work
+          $text=Get-Content work/AirtelMonitorNative.cs -Raw
+          $start=$text.IndexOf('var net=PanelCard()')
+          if($start -lt 0){throw 'missing network card'}
+          $end=$text.IndexOf('var chPanel=PanelCard()', $start)
+          Write-Host '=== NETWORK CARD BEGIN ==='
+          Write-Host $text.Substring($start,$end-$start)
+          Write-Host '=== NETWORK CARD END ==='
+          $start2=$text.IndexOf('void UpdateSignalDisplay(')
+          Write-Host '=== SIGNAL RENDER ==='
+          Write-Host $text.Substring($start2,[Math]::Min(1700,$text.Length-$start2))
