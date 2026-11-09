@@ -101,6 +101,23 @@ jobs:
           $env:TNET_DESIGN_CAPTURE_PATH=$capture
           $app=Start-Process -FilePath (Resolve-Path work/AirtelDataMonitor.exe) -WorkingDirectory (Resolve-Path work) -PassThru
           try{
+            Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class TNetWindowSize {
+            [DllImport("user32.dll")] public static extern bool SetWindowPos(
+              IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+          }
+          '@
+            for($i=0;$i -lt 35;$i++){
+              Start-Sleep -Milliseconds 100
+              $app.Refresh()
+              if($app.MainWindowHandle -ne [IntPtr]::Zero){
+                [TNetWindowSize]::SetWindowPos($app.MainWindowHandle,
+                  [IntPtr]::Zero,0,0,1600,900,0x40) | Out-Null
+                break
+              }
+            }
             $complete=$false
             for($i=0;$i -lt 90;$i++){
               Start-Sleep -Milliseconds 500
