@@ -129,6 +129,10 @@ one('''      stack.RowStyles.Add(new RowStyle(SizeType.Percent,37));
 one('''      nordicSignalMetric=Metric(metrics,"Wi-Fi signal",2);''',
 '''      nordicSignalMetric=Metric(metrics,"Wi-Fi signal",2);
       nordicSignalMetric.Font=new Font("Segoe UI",16,FontStyle.Bold);''')
+one('''      nordicSignalMetric.Font=new Font("Segoe UI",16,FontStyle.Bold);''',
+'''      nordicSignalMetric.Font=new Font("Segoe UI",16,FontStyle.Bold);
+      nordicSignalMetric.Text="—";''')
+
 
 # Opt 02 uses a softly blue sidebar and inset selected nav, not a white slab.
 one('''      var aside=new Panel{Dock=DockStyle.Fill,Padding=new Padding(12,26,12,16),
@@ -143,6 +147,88 @@ one('''        nordicSidebar.BackColor=light?Color.White:Color.FromArgb(18,27,44
 '''        nordicSidebar.BackColor=light?Color.FromArgb(238,245,255):Color.FromArgb(18,27,44);''')
 one('''          (light?Color.White:Color.FromArgb(18,27,44));''',
 '''          (light?Color.FromArgb(238,245,255):Color.FromArgb(18,27,44));''')
+
+
+# Header branding stays at the TOP of the sidebar, and navigation beneath.
+# Avoid top-docking order which placed the brand under the navigation.
+one('''      var brand=new Label{Text="◉ T-Net",Dock=DockStyle.Top,Height=64,
+        Font=new Font("Segoe UI",17,FontStyle.Bold),''',
+'''      var brand=new Label{Text="◉ T-Net",Dock=DockStyle.None,
+        Location=new Point(12,17),Size=new Size(138,47),
+        Font=new Font("Segoe UI",17,FontStyle.Bold),''')
+one('''      var navigation=new Panel{Dock=DockStyle.Top,Height=260,
+        Margin=new Padding(0),Padding=new Padding(0,8,0,0)};''',
+'''      var navigation=new Panel{Dock=DockStyle.None,
+        Location=new Point(10,84),Size=new Size(137,260),
+        Margin=new Padding(0),Padding=new Padding(0,8,0,0)};''')
+
+# The old native menu was visually plain. Use a compact rounded, segmented
+# Light / Dark / Auto popover, preserving actual saved theme logic.
+one('''      appearanceButton.Text="◐ Appearance  ▾";''',
+    '''      appearanceButton.Text="◐ Appearance  ▾";''')
+one('''    void ShowAppearanceMenu(){
+      if(appearanceMenu!=null){appearanceMenu.Dispose();appearanceMenu=null;}
+      appearanceMenu=new ContextMenuStrip();
+      foreach(string item in new[]{"Light","Dark","System"}){
+        string value=item.ToLowerInvariant();
+        string display=item=="Light"?"☀  Light mode":
+          item=="Dark"?"☾  Dark mode":"▣  Follow Windows";
+        appearanceMenu.Items.Add(new ToolStripMenuItem(
+          display,null,(sender,e)=>SelectAppearance(value)){
+            Checked=appearanceMode==value
+          });
+      }
+      appearanceMenu.Font=new Font("Segoe UI",10);
+      appearanceMenu.Padding=new Padding(5);
+      appearanceMenu.ShowImageMargin=false;
+      appearanceMenu.BackColor=appearanceIsLight?lightPanel:darkPanel;
+      appearanceMenu.ForeColor=appearanceIsLight?lightInk:darkInk;
+      appearanceMenu.Show(appearanceButton,new Point(0,appearanceButton.Height));
+    }''',
+'''    void ShowAppearanceMenu(){
+      if(appearanceMenu!=null){appearanceMenu.Dispose();appearanceMenu=null;}
+      appearanceMenu=new ContextMenuStrip{
+        ShowImageMargin=false,ShowCheckMargin=false,
+        Padding=new Padding(6),BackColor=appearanceIsLight?
+          Color.White:darkPanel
+      };
+      var options=new FlowLayoutPanel{
+        Size=new Size(266,42),Margin=new Padding(0),
+        Padding=new Padding(4),WrapContents=false,
+        FlowDirection=FlowDirection.LeftToRight,
+        BackColor=appearanceIsLight?
+          Color.FromArgb(230,240,252):Color.FromArgb(35,48,69)
+      };
+      foreach(string choice in new[]{"light","dark","system"}){
+        string label=choice=="light"?"☀ Light":
+          choice=="dark"?"☾ Dark":"◐ Auto";
+        bool selected=appearanceMode==choice;
+        var button=new Button{Text=label,
+          Size=new Size(82,32),Margin=new Padding(1),
+          FlatStyle=FlatStyle.Flat,
+          Font=new Font("Segoe UI",9,selected?FontStyle.Bold:FontStyle.Regular),
+          ForeColor=selected?Color.FromArgb(44,114,227):
+            (appearanceIsLight?lightInk:darkInk),
+          BackColor=selected?
+            (appearanceIsLight?Color.White:Color.FromArgb(55,74,103)):
+            (appearanceIsLight?Color.FromArgb(230,240,252):
+              Color.FromArgb(35,48,69))
+        };
+        button.FlatAppearance.BorderSize=0;
+        string mode=choice;
+        button.Click+=(sender,e)=>{
+          SelectAppearance(mode);
+          if(appearanceMenu!=null)appearanceMenu.Close();
+        };
+        options.Controls.Add(button);
+      }
+      var host=new ToolStripControlHost(options){
+        AutoSize=false,Size=new Size(266,42),
+        Margin=new Padding(0),Padding=new Padding(0)
+      };
+      appearanceMenu.Items.Add(host);
+      appearanceMenu.Show(appearanceButton,new Point(0,appearanceButton.Height+3));
+    }''')
 
 # Option 02 uses white cards with a clean, lightly outlined border.
 one('''using(var pen=new Pen(Color.FromArgb(211,224,237),1))''',
