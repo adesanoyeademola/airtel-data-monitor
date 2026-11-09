@@ -123,6 +123,21 @@ jobs:
             if(!$unlocked){throw 'Rendered image remained locked or empty'}
             New-Item -ItemType Directory design-reviews -Force | Out-Null
             Copy-Item $capture design-reviews/approved-v631-webview-runtime.png
+            foreach($page in @('usage','network','history','settings','dashboard')){
+              $source=Join-Path (Resolve-Path work).Path "approved-page-$page.png"
+              $found=$false
+              for($retry=0;$retry -lt 30;$retry++){
+                if(Test-Path $source){
+                  try{
+                    $stream=[IO.File]::Open($source,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+                    try{if($stream.Length -gt 1500){$found=$true;break}}finally{$stream.Dispose()}
+                  }catch{}
+                }
+                Start-Sleep -Milliseconds 250
+              }
+              if(!$found){throw "Sidebar page render missing: $page"}
+              Copy-Item $source "design-reviews/approved-v631-page-$page.png"
+            }
             Add-Type -AssemblyName System.Drawing
             $image=[System.Drawing.Image]::FromFile($capture)
             try{
@@ -147,7 +162,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add design-reviews/approved-v631-webview-runtime.png design-reviews/approved-v631-webview-base64.txt
+          git add design-reviews/approved-v631-webview-runtime.png design-reviews/approved-v631-webview-base64.txt design-reviews/approved-v631-page-*.png
           git commit -m 'Capture real WebView2 approved UI before any stable release'
           git push origin HEAD:design/approved-dark-dashboard-v631
       - name: Package isolated preview only
