@@ -1,0 +1,68 @@
+name: Verify T-Net v6.21 compact layout and usage views
+on:
+  push:
+    branches: [feature/compact-header-usage-tabs-v621]
+    paths:
+      - '.github/workflows/v621-interface.yml'
+      - 'release-candidate/patch_v621.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source patch and preserved engine
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory work -Force | Out-Null
+          Expand-Archive releases/AirtelMonitor-6.20.0.zip work
+          $engineHash=(Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash
+          Copy-Item work/AirtelMonitorNative.cs work/Original.cs
+          python release-candidate/patch_v621.py
+          if($LASTEXITCODE -ne 0){throw 'v6.21 patch failed'}
+          if((Get-FileHash work/monitor.ps1 -Algorithm SHA256).Hash -ne $engineHash){throw 'Monitoring engine changed'}
+          @'
+          from pathlib import Path
+          a=Path('work/Original.cs').read_text(encoding='utf-8-sig')
+          b=Path('work/AirtelMonitorNative.cs').read_text(encoding='utf-8-sig')
+          for item in ('TrackUsageCheckpoint(','UpdateSignalTrayState(',
+                       'signalTrayPopup.Deactivate+=','new VScrollBar{',
+                       'downloadSpeed.Text=Rate(rateRx)',
+                       'uploadSpeed.Text=Rate(rateTx)',
+                       'MonthTotalFromExistingDays(d)',
+                       'void CheckSystemAppearance()'):
+              assert item in a and item in b, 'Preserved feature missing: '+item
+          for item in ('const string AppVersion = "6.21.0";',
+                       'CompactSpeedPill(headerActions,"↓"',
+                       'CompactSpeedPill(headerActions,"↑"',
+                       'void RenderUsagePeriod()',
+                       'dayUsageButton=UsagePeriodButton("Daily usage",0);',
+                       'weekUsageButton=UsagePeriodButton("Weekly usage",3);',
+                       'monthUsageButton=UsagePeriodButton("Monthly usage",4);',
+                       'detailsRevealSpacer.Height=viewportHeight+12;'):
+              assert item in b,'New feature missing: '+item
+          print('PASS: existing monitoring, UI flyout and user records preserved')
+          '@ | Set-Content work/check_v621.py -Encoding UTF8
+          python work/check_v621.py
+          if($LASTEXITCODE -ne 0){throw 'Regression test failed'}
+      - name: Compile Windows WinForms application
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $err=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('work/monitor.ps1',[ref]$null,[ref]$err)|Out-Null
+          if($err.Count){throw 'Monitoring engine syntax invalid'}
+          Add-Type -Path work/AirtelMonitorNative.cs -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Web.Extensions.dll','System.Windows.Forms.DataVisualization.dll','System.IO.Compression.dll','System.IO.Compression.FileSystem.dll') -ErrorAction Stop
+          if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'Compiled EXE missing'}
+      - name: Package preview only
+        shell: pwsh
+        run: |
+          Compress-Archive -Path work/AirtelMonitorNative.cs,work/monitor.ps1 -DestinationPath work/AirtelMonitor-6.21.0-preview.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v621-compact-header-preview
+          path: work/AirtelMonitor-6.21.0-preview.zip
+          retention-days: 10
