@@ -245,6 +245,53 @@ one('''      updateButton.Font=new Font("Segoe UI",9,FontStyle.Regular);
       RoundSurface(updateButton,12);
       ShapeAppearanceButton();''')
 
+
+# FINAL VISUAL-PARITY PASS: Option 02's top speed tiles are softly elevated,
+# the network panel reads as a compact inspection card, and no-data charts
+# must not look like a broken white rectangle.
+one('''      var card=PanelCard();
+      var stack=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,''',
+'''      var card=PanelCard();
+      card.Padding=new Padding(13,11,12,10);
+      var stack=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,''')
+one('''      var caption=new Label{Text=name,ForeColor=color,Dock=DockStyle.Fill,
+        Font=new Font("Segoe UI",10,FontStyle.Regular),''',
+'''      var caption=new Label{Text=name,ForeColor=muted,Dock=DockStyle.Fill,
+        Font=new Font("Segoe UI",9,FontStyle.Regular),''')
+# The brand in the reference uses a blue wireless symbol with blue T-Net text.
+# Ensure selected navigation has a blue outline/shading, like reference.
+# Contrast and spacing on the right network information panel.
+one('''      var net=PanelCard();
+      nordicNetworkPanel=net;''',
+'''      var net=PanelCard();
+      net.Padding=new Padding(15,16,14,16);
+      nordicNetworkPanel=net;''')
+# Give the chart area its own true white surface with distinctive airy padding.
+one('''      var chPanel=PanelCard();''',
+'''      var chPanel=PanelCard();
+      chPanel.Padding=new Padding(14,15,14,13);''')
+# The daily/weekly/monthly selectors are compact, soft-blue rounded chips.
+one('''      foreach(var tab in new[]{dayUsageButton,weekUsageButton,monthUsageButton}){
+        tab.FlatAppearance.BorderSize=0;''',
+'''      foreach(var tab in new[]{dayUsageButton,weekUsageButton,monthUsageButton}){
+        tab.Font=new Font("Segoe UI",9,FontStyle.Regular);
+        tab.Margin=new Padding(3,3,3,3);
+        tab.FlatAppearance.BorderSize=0;''')
+# More legible blue daily-usage histogram on Nordic white background.
+one('''      if(chart!=null && chart.Series.Count>0)
+        chart.Series[0].Color=useLight?Color.FromArgb(61,127,235):accent;''',
+'''      if(chart!=null && chart.Series.Count>0){
+        chart.Series[0].Color=useLight?Color.FromArgb(57,132,241):accent;
+        var axis=chart.ChartAreas[0];
+        axis.AxisX.MajorGrid.Enabled=false;
+        axis.AxisY.MajorGrid.LineColor=useLight?
+          Color.FromArgb(221,232,247):Color.FromArgb(48,60,76);
+        axis.AxisX.LineColor=useLight?Color.FromArgb(213,226,245):muted;
+        axis.AxisY.LineColor=useLight?Color.FromArgb(213,226,245):muted;
+        axis.AxisX.LabelStyle.ForeColor=useLight?lightMuted:darkMuted;
+        axis.AxisY.LabelStyle.ForeColor=useLight?lightMuted:darkMuted;
+      }''')
+
 # Option 02 uses white cards with a clean, lightly outlined border.
 one('''using(var pen=new Pen(Color.FromArgb(211,224,237),1))''',
 '''using(var pen=new Pen(Color.FromArgb(223,233,248),1))''')
