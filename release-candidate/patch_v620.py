@@ -46,17 +46,20 @@ one('    Label SpeedMetric(TableLayoutPanel parent,string name,int col){',
       var surface=new Panel{Dock=DockStyle.Fill,Margin=new Padding(3,8,3,8),
         Padding=new Padding(8,6,6,4),BackColor=panel,Tag="tnet-header-speed"};
       surface.Resize+=(sender,e)=>RoundSurface(surface,9);
-      surface.Controls.Add(new Label{
-        Dock=DockStyle.Top,Height=19,Text=name,
+      var rows=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=2,ColumnCount=1,
+        Margin=new Padding(0),Padding=new Padding(0)};
+      rows.RowStyles.Add(new RowStyle(SizeType.Absolute,19));
+      rows.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+      rows.Controls.Add(new Label{
+        Dock=DockStyle.Fill,Text=name,
         Font=new Font("Segoe UI",8,FontStyle.Bold),
-        ForeColor=highlight,TextAlign=ContentAlignment.MiddleLeft});
+        ForeColor=highlight,TextAlign=ContentAlignment.MiddleLeft},0,0);
       var value=new Label{
         Dock=DockStyle.Fill,Text="— Kbps",AutoEllipsis=true,
         Font=new Font("Segoe UI",11,FontStyle.Bold),
         ForeColor=ink,TextAlign=ContentAlignment.MiddleLeft};
-      // Dock stacking: put the Top label before the fill label.
-      surface.Controls.Add(value);
-      value.BringToFront();
+      rows.Controls.Add(value,0,1);
+      surface.Controls.Add(rows);
       parent.Controls.Add(surface,col,0);
       return value;
     }
@@ -148,6 +151,19 @@ one('''stack.Controls.Add(new Label {Text=name,Dock=DockStyle.Fill,ForeColor=mut
         Color.FromArgb(207,149,55);
       stack.Controls.Add(new Label {Text=name,Dock=DockStyle.Fill,
         ForeColor=labelColor,TextAlign=ContentAlignment.MiddleLeft},0,0);''')
+
+
+# Built-in official HTTPS feed prevents "updates not configured" when the
+# optional updates.txt is absent. Existing local HTTPS overrides still win.
+one('''      if(!File.Exists(path))return "";''',
+    '''      if(!File.Exists(path))return
+        "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/updates/stable.json";''')
+one('''      return "";
+    }
+    async Task CheckUpdates(bool silent)''',
+    '''      return "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/updates/stable.json";
+    }
+    async Task CheckUpdates(bool silent)''')
 
 # Action controls stay the original size/position; keep current brand/status indicators.
 for q in ['const string AppVersion = "6.20.0";',
