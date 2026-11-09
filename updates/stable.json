@@ -1,7 +1,7 @@
 {
-  "version": "6.29.0",
+  "version": "6.30.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.29.0.zip",
-  "sha256": "879f00eb275e3ddd14204f6f122e42fff42e3e2cfb48556a9fe797277bf70c69",
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.30.0.zip",
+  "sha256": "ccd6577acb8f678b53a5d6bc85bf9f159d39b9827a3fd6b12c62ae8e5f9382a1",
   "notes": "Option 02 Nordic Canvas refinement: wider default Windows canvas, compact three-tile live metrics, balanced chart and network panels, sidebar brand and alignment corrections, soft-blue rounded chart tabs, modern Light/Dark/Auto Appearance dropdown and improved typography. Existing live traffic source, records, Wi-Fi flyout, settings, and in-place updater preserved."
 }
