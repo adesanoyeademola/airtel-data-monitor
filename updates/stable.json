@@ -1,7 +1,7 @@
 {
-  "version": "6.28.0",
+  "version": "6.29.0",
   "status": "available",
-  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.28.0.zip",
-  "sha256": "1f06aa5c3dc217c990a3c0636e8ca05090a3a029638ecc8e2f110dad56fce454",
-  "notes": "Option 02 Nordic Canvas layout correction: T-Net brand fixed at top of soft-blue navigation rail, three compact Download/Upload/Wi-Fi tiles above a wide usage chart, full-height Network panel at right, modern rounded chart tabs and updates action, compact Appearance dropdown with segmented Light/Dark/Auto choices, responsive signal strength and proper blank-state placeholder. Existing data and monitoring engine preserved."
+  "packageUrl": "https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/AirtelMonitor-6.29.0.zip",
+  "sha256": "879f00eb275e3ddd14204f6f122e42fff42e3e2cfb48556a9fe797277bf70c69",
+  "notes": "Option 02 Nordic Canvas refinement: wider default Windows canvas, compact three-tile live metrics, balanced chart and network panels, sidebar brand and alignment corrections, soft-blue rounded chart tabs, modern Light/Dark/Auto Appearance dropdown and improved typography. Existing live traffic source, records, Wi-Fi flyout, settings, and in-place updater preserved."
 }
