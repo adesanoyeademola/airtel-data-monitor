@@ -164,8 +164,6 @@ one('''      var navigation=new Panel{Dock=DockStyle.Top,Height=260,
 
 # The old native menu was visually plain. Use a compact rounded, segmented
 # Light / Dark / Auto popover, preserving actual saved theme logic.
-one('''      appearanceButton.Text="◐ Appearance  ▾";''',
-    '''      appearanceButton.Text="◐ Appearance  ▾";''')
 one('''    void ShowAppearanceMenu(){
       if(appearanceMenu!=null){appearanceMenu.Dispose();appearanceMenu=null;}
       appearanceMenu=new ContextMenuStrip();
