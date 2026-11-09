@@ -1,4 +1,4 @@
-name: Capture actual Nordic v6.30 layout
+name: Capture actual Nordic v6.30 usage summary layout
 # Re-render the polished sidebar and Appearance control.
 on:
   push:
