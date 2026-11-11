@@ -336,7 +336,15 @@ window.TNetBridgeUpdate=(p)=>{
    by("live-signal").textContent=val;by("live-signal-secondary").textContent=val;
    by("live-signal").style.color=!valid?"var(--muted)":p.signalPercent>=80?"#41fa83":p.signalPercent>=50?"#f0c653":"#ff7575";
  }
- if(p.status!==undefined){by("live-status").textContent=asText(p.status);doc.querySelector(".live-dot").style.background=p.status==="Monitoring live"?"#41ed67":p.status==="Not connected"?"#f66":"#e7b74b"}
+ if(p.status!==undefined){
+   const connected=p.status==="Monitoring live";
+   by("live-status").textContent=asText(p.status);
+   by("live-status").style.color=connected?"#62f790":p.status==="Not connected"?"#ff8080":"#f0c653";
+   const dot=doc.querySelector(".live-dot");
+   dot.style.background=connected?"#41ed67":p.status==="Not connected"?"#ff6666":"#e7b74b";
+   dot.style.animation=connected?"breath 2s ease-in-out infinite":"none";
+   doc.querySelector(".wave").style.opacity=connected?"1":"0.35";
+ }
  for(const [k,id] of [["todayTotal","live-today"],["sevenDayTotal","live-seven"],["monthTotal","live-month"]])if(p[k]!==undefined)by(id).textContent=bytes(p[k]);
  if(Array.isArray(p.days)){
    const m=new Map(p.days.filter(d=>d&&typeof d.date==="string"&&typeof d.total==="number").map(d=>[d.date,d.total]));
