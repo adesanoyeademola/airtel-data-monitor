@@ -125,8 +125,25 @@ jobs:
         shell: pwsh
         run: |
           Write-Host 'SECURITY HOLD: build and tests only; do not publish executable to main.'
-      - uses: actions/upload-artifact@v4
-        with:
-          name: T-Net-6.31.1-one-click-executable
-          path: source/work/TNet-OneClick-Repair-6.31.1.exe
-          retention-days: 14
+      - name: Microsoft Defender scan of experimental installer and payload
+        shell: powershell
+        run: |
+          $ErrorActionPreference='Stop'
+          $scanner=Join-Path $env:ProgramFiles 'Windows Defender\\MpCmdRun.exe'
+          if(!(Test-Path $scanner)){
+            $scanner=Join-Path $env:ProgramData 'Microsoft\\Windows Defender\\Platform'
+            $scanner=(Get-ChildItem $scanner -Recurse -Filter MpCmdRun.exe -ErrorAction SilentlyContinue |
+              Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+          }
+          if(!(Test-Path $scanner)){throw 'Microsoft Defender scanner unavailable; release not approved'}
+          foreach($file in @('source/work/TNet-OneClick-Repair-6.31.1.exe',
+                              'source/work/TNetUI-6.31.1-payload.zip')){
+            & $scanner -Scan -ScanType 3 -File (Resolve-Path $file).Path -DisableRemediation
+            if($LASTEXITCODE -ne 0){throw "Microsoft Defender scan did not pass for $file (exit $LASTEXITCODE)"}
+          }
+          Write-Host 'Defender scan completed. This is not a substitute for code signing or independent security review.'
+      - name: Gate future public release on independently reviewed code signing
+        shell: pwsh
+        run: |
+          Write-Host 'HOLD: no signed, independently reviewed release has been approved.'
+          Write-Host 'This workflow intentionally publishes no executable or installer artifacts.'
