@@ -1,17 +1,10 @@
 name: Build and publish T-Net 6.31.1 one-click repair
+# Disabled automatic publishing after Microsoft Defender security detection.
+# Re-enable releases only after security review and signing.
 on:
-  push:
-    branches: [design/approved-v631-final-controls]
-    paths:
-      - 'installer/TNetOneClickRepair.cs'
-      - 'design/approved-dark-v631.cs'
-      - 'design/bridge/TNetWebViewBridge.cs'
-      - 'design/bridge/patch_webview_shell.py'
-      - 'design/reference/approved-ui-live.html'
-      - '.github/workflows/v631-oneclick-repair.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: tnet-oneclick-publish
   cancel-in-progress: false
@@ -128,37 +121,10 @@ jobs:
           $run=Start-Process -FilePath $app -ArgumentList @('--selftest', ('"'+$zip+'"')) -Wait -PassThru
           if($run.ExitCode -ne 0){throw "Self-test failed: $($run.ExitCode)"}
           Write-Host 'PASS: one-click upgrade, backup and protected usage/history preservation'
-      - name: Publish repaired Windows payload, one-click EXE and UI feed
+      - name: Publication disabled pending Windows security review
         shell: pwsh
         run: |
-          $ErrorActionPreference='Stop'
-          $manifest=Get-Content publisher/updates/stable.json -Raw | ConvertFrom-Json
-          if($manifest.version -ne '6.30.0'){throw "Stable version changed ($($manifest.version)); release not safe"}
-          Copy-Item source/work/TNetUI-6.31.1-payload.zip publisher/releases/TNetUI-6.31.1-payload.zip
-          Copy-Item source/work/TNet-OneClick-Repair-6.31.1.exe publisher/releases/TNet-OneClick-Repair-6.31.1.exe
-          Copy-Item source/work/approved-ui-live.html publisher/releases/approved-ui-live-6.31.1.html
-          $uiSha=(Get-FileHash publisher/releases/approved-ui-live-6.31.1.html -Algorithm SHA256).Hash.ToLowerInvariant()
-          $installerSha=(Get-FileHash publisher/releases/TNet-OneClick-Repair-6.31.1.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          $ui=[ordered]@{
-            version='6.31.1'
-            uiUrl='https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/approved-ui-live-6.31.1.html'
-            uiSha256=$uiSha
-          }
-          [IO.File]::WriteAllText('publisher/updates/ui.json',($ui|ConvertTo-Json -Depth 3),[Text.UTF8Encoding]::new($false))
-          $publishNotes="T-Net v6.31.1 one-click verified repair; AppData-targeted install, backup and rollback, clean appearance symbols, no debug badges, native WebView2 UI-updates."
-          [IO.File]::WriteAllText('publisher/releases/TNet-6.31.1-release-notes.txt',
-            $publishNotes+"\nInstaller SHA256: "+$installerSha,[Text.UTF8Encoding]::new($false))
-          Set-Location publisher
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add releases/TNetUI-6.31.1-payload.zip releases/TNet-OneClick-Repair-6.31.1.exe releases/approved-ui-live-6.31.1.html releases/TNet-6.31.1-release-notes.txt updates/ui.json
-          git diff --cached --quiet
-          if($LASTEXITCODE -ne 0){
-            git commit -m 'Publish verified one-click T-Net 6.31.1 repair and in-app UI update feed'
-            if($LASTEXITCODE -ne 0){throw 'Publication commit failed'}
-            git push origin HEAD:main
-            if($LASTEXITCODE -ne 0){throw 'Publishing repair assets failed'}
-          }
+          Write-Host 'SECURITY HOLD: build and tests only; do not publish executable to main.'
       - uses: actions/upload-artifact@v4
         with:
           name: T-Net-6.31.1-one-click-executable
