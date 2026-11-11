@@ -1,7 +1,7 @@
 name: Verify approved T-Net UI with Windows telemetry bridge
 on:
   push:
-    branches: [design/approved-dark-dashboard-v631]
+    branches: [design/approved-v631-final-controls]
     paths:
       - 'design/reference/approved-ui-live.html'
       - 'design/bridge/**'
@@ -9,7 +9,7 @@ on:
       - '.github/workflows/v631-webview-integration.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   verify-approved-interface:
     runs-on: windows-latest
@@ -83,6 +83,17 @@ jobs:
                  (Resolve-Path 'work/Microsoft.Web.WebView2.WinForms.dll').Path)
           Add-Type -Path @('work/AirtelMonitorNative.cs','work/TNetWebViewBridge.cs') -OutputAssembly work/AirtelDataMonitor.exe -OutputType WindowsApplication -ReferencedAssemblies ($framework + $web) -ErrorAction Stop
           if(!(Test-Path work/AirtelDataMonitor.exe)){throw 'T-Net Windows executable missing'}
+      - name: Check final approved identity, switch and live telemetry contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $h=Get-Content work/approved-ui-live.html -Raw
+          if(([regex]::Matches($h,'<span>T-Net</span>')).Count -ne 1){throw 'Expected one T-Net brand in title bar'}
+          if($h -notmatch 'class="appearance-switch"' -or $h -match 'id="theme-toggle"'){throw 'Final appearance selector not installed'}
+          foreach($tag in @('id="live-down"','id="live-up"','id="live-signal"','function showPage(name)','window.TNetBridgeUpdate','data-theme="auto"')) {
+            if(!$h.Contains($tag)){throw "Lost approved live UI binding $tag"}
+          }
+          if(!$h.Contains('b.dataset.theme==="auto"?"system":b.dataset.theme')){throw 'Auto setting must be mapped to Windows system setting'}
       - name: Validate frontend JavaScript parses without browser dependencies
         shell: pwsh
         run: |
@@ -174,14 +185,6 @@ jobs:
           }finally{
             if(!$app.HasExited){Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue}
           }
-      - name: Record actual rendered UI for review on design branch only
-        shell: pwsh
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add design-reviews/approved-v631-webview-runtime.png design-reviews/approved-v631-webview-base64.txt design-reviews/approved-v631-page-*.png
-          git commit -m 'Capture real WebView2 approved UI before any stable release'
-          git push origin HEAD:design/approved-dark-dashboard-v631
       - name: Package isolated preview only
         shell: pwsh
         run: |
@@ -193,4 +196,12 @@ jobs:
         with:
           name: t-net-v631-webview2-preview-not-stable
           path: work/T-Net-6.31.0-Design-Preview.zip
+          retention-days: 14
+      - name: Upload Windows-rendered UI screenshots for design verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: t-net-v631-approved-final-ui-screenshots
+          path: |
+            design-reviews/approved-v631-webview-runtime.png
+            design-reviews/approved-v631-page-*.png
           retention-days: 14

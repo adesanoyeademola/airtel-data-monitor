@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
@@ -98,7 +102,10 @@ namespace AirtelMonitorNative {
             PostApprovedTheme();
             if(lastApprovedSample!=null)PushApprovedTelemetry(lastApprovedSample,true);
             break;
-          case "checkUpdates": await CheckUpdates(false); break;
+          case "checkUpdates":
+            // Update the WebView2 HTML in place; do not invoke legacy native updater for UI assets.
+            if(!await TryUpdateWebUiAsync(false))await CheckUpdates(false);
+            break;
           case "appearance":
             if(value=="light"||value=="dark"||value=="system")
               SelectAppearance(value);
@@ -119,6 +126,68 @@ namespace AirtelMonitorNative {
         }
       }catch(Exception ex){
         System.Diagnostics.Debug.WriteLine("UI command ignored: "+ex.Message);
+      }
+    }
+    // UI-only updates are downloaded and verified by the running application.
+    // No PowerShell, installer, file selection, monitoring engine changes or restart.
+    async Task<bool> TryUpdateWebUiAsync(bool silent){
+      const string manifestUrl="https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/updates/ui.json";
+      string target=Path.Combine(root,"approved-ui-live.html");
+      if(!File.Exists(target))return false;
+      string temp=null;
+      try{
+        ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
+        string payload=await Task.Run(()=>{
+          using(var wc=new WebClient()){
+            wc.Headers[HttpRequestHeader.UserAgent]="T-Net/6.31";
+            return wc.DownloadString(manifestUrl);
+          }
+        });
+        var manifest=json.Deserialize<Dictionary<string,object>>(payload);
+        if(manifest==null)return false;
+        string url=Str(manifest,"uiUrl");
+        string expected=Str(manifest,"uiSha256").ToLowerInvariant();
+        if(!url.StartsWith("https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/",StringComparison.Ordinal)
+           || !System.Text.RegularExpressions.Regex.IsMatch(expected,"^[0-9a-f]{64}$"))
+          throw new Exception("UI release manifest did not pass security checks.");
+        byte[] existing=File.ReadAllBytes(target);
+        string currentHash;
+        using(var hash=SHA256.Create())currentHash=BitConverter.ToString(hash.ComputeHash(existing)).Replace("-","").ToLowerInvariant();
+        if(currentHash==expected)return false; // UI already current; check full updates instead.
+        if(!silent && MessageBox.Show("A T-Net interface improvement is available. Apply it now? Your monitoring data and settings will remain unchanged.",
+             "T-Net UI update",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return true;
+        byte[] downloaded=await Task.Run(()=>{
+          using(var wc=new WebClient()){
+            wc.Headers[HttpRequestHeader.UserAgent]="T-Net/6.31";
+            return wc.DownloadData(url);
+          }
+        });
+        if(downloaded.Length<5000||downloaded.Length>4*1024*1024)throw new Exception("Unexpected UI update size.");
+        string actual;
+        using(var hash=SHA256.Create())actual=BitConverter.ToString(hash.ComputeHash(downloaded)).Replace("-","").ToLowerInvariant();
+        if(actual!=expected)throw new Exception("UI update checksum mismatch; nothing changed.");
+        string html=new UTF8Encoding(false,true).GetString(downloaded);
+        foreach(string required in new[]{"window.TNetBridgeUpdate","function showPage(name)","appearance-switch","id=\"live-down\"","id=\"live-signal\""})
+          if(!html.Contains(required))throw new Exception("UI update failed compatibility validation: "+required);
+        temp=Path.Combine(root,".tnet-ui-"+Guid.NewGuid().ToString("N")+".tmp");
+        File.WriteAllBytes(temp,downloaded);
+        string backup=Path.Combine(root,"approved-ui-live.backup-"+DateTime.UtcNow.ToString("yyyyMMddHHmmss")+".html");
+        File.Replace(temp,target,backup,false);
+        temp=null;
+        if(approvedDashboard!=null && !approvedDashboard.IsDisposed && approvedDashboard.CoreWebView2!=null){
+          approvedDashboardReady=false;
+          approvedDashboard.CoreWebView2.Reload();
+        }
+        if(!silent)MessageBox.Show("T-Net interface updated. Monitoring history and counters were not changed.","Update complete");
+        return true;
+      }catch(WebException){
+        // The optional UI feed may not yet be published. Keep checking existing release feed.
+        return false;
+      }catch(Exception ex){
+        if(!silent)MessageBox.Show("The UI update was not installed: "+ex.Message,"T-Net update");
+        return true; // Stop: do not accidentally start a second updater after a failed UI update.
+      }finally{
+        if(temp!=null)try{File.Delete(temp);}catch{}
       }
     }
     void PostApprovedTheme(){
