@@ -18,6 +18,7 @@ namespace AirtelMonitorNative {
   public partial class MainForm {
     WebView2 approvedDashboard;
     bool approvedDashboardReady = false;
+    bool uiUpdateInProgress = false;
     Dictionary<string,object> lastApprovedSample;
     DateTime lastHistorySentUtc=DateTime.MinValue;
     DateTime lastLogSentUtc=DateTime.MinValue;
@@ -103,8 +104,9 @@ namespace AirtelMonitorNative {
             if(lastApprovedSample!=null)PushApprovedTelemetry(lastApprovedSample,true);
             break;
           case "checkUpdates":
-            // Update the WebView2 HTML in place; do not invoke legacy native updater for UI assets.
-            if(!await TryUpdateWebUiAsync(false))await CheckUpdates(false);
+            // Only the vetted HTML UI channel is enabled. Never fall back
+            // to the withdrawn source/EXE installer from a modern WebView2 UI.
+            await TryUpdateWebUiAsync(false);
             break;
           case "appearance":
             if(value=="light"||value=="dark"||value=="system")
@@ -133,9 +135,12 @@ namespace AirtelMonitorNative {
     async Task<bool> TryUpdateWebUiAsync(bool silent){
       const string manifestUrl="https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/updates/ui.json";
       string target=Path.Combine(root,"approved-ui-live.html");
-      if(!File.Exists(target))return false;
+      if(uiUpdateInProgress)return true;
+      uiUpdateInProgress=true;
       string temp=null;
       try{
+        if(!File.Exists(target))
+          throw new Exception("Installed interface file not found; no changes made.");
         ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
         string payload=await Task.Run(()=>{
           using(var wc=new WebClient()){
@@ -144,7 +149,7 @@ namespace AirtelMonitorNative {
           }
         });
         var manifest=json.Deserialize<Dictionary<string,object>>(payload);
-        if(manifest==null)return false;
+        if(manifest==null)throw new Exception("UI update manifest is unavailable.");
         string url=Str(manifest,"uiUrl");
         string expected=Str(manifest,"uiSha256").ToLowerInvariant();
         if(!url.StartsWith("https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/",StringComparison.Ordinal)
@@ -153,7 +158,10 @@ namespace AirtelMonitorNative {
         byte[] existing=File.ReadAllBytes(target);
         string currentHash;
         using(var hash=SHA256.Create())currentHash=BitConverter.ToString(hash.ComputeHash(existing)).Replace("-","").ToLowerInvariant();
-        if(currentHash==expected)return false; // UI already current; check full updates instead.
+        if(currentHash==expected){
+          if(!silent)MessageBox.Show("Your T-Net interface is already up to date.","T-Net updates");
+          return true;
+        }
         if(!silent && MessageBox.Show("A T-Net interface improvement is available. Apply it now? Your monitoring data and settings will remain unchanged.",
              "T-Net UI update",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return true;
         byte[] downloaded=await Task.Run(()=>{
@@ -180,14 +188,15 @@ namespace AirtelMonitorNative {
         }
         if(!silent)MessageBox.Show("T-Net interface updated. Monitoring history and counters were not changed.","Update complete");
         return true;
-      }catch(WebException){
-        // The optional UI feed may not yet be published. Keep checking existing release feed.
-        return false;
+      }catch(WebException ex){
+        if(!silent)MessageBox.Show("Could not reach the T-Net UI update feed. Check your internet connection and try again.\n\n"+ex.Message,"T-Net updates");
+        return true;
       }catch(Exception ex){
         if(!silent)MessageBox.Show("The UI update was not installed: "+ex.Message,"T-Net update");
         return true; // Stop: do not accidentally start a second updater after a failed UI update.
       }finally{
         if(temp!=null)try{File.Delete(temp);}catch{}
+        uiUpdateInProgress=false;
       }
     }
     void PostApprovedTheme(){
