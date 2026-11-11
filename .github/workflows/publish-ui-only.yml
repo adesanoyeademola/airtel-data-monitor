@@ -1,0 +1,76 @@
+name: Publish vetted T-Net UI-only correction
+on:
+  push:
+    branches: [design/approved-v631-final-controls]
+    paths:
+      - 'design/reference/approved-ui-live.html'
+      - '.github/workflows/publish-ui-only.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: tnet-ui-only
+  cancel-in-progress: false
+jobs:
+  publish-verified-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: design/approved-v631-final-controls
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: publisher
+          persist-credentials: true
+      - name: Verify HTML-only update without executables
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('source/design/reference/approved-ui-live.html').read_text(encoding='utf-8')
+          for marker in ['window.TNetBridgeUpdate','appearance-switch','function showPage(name)',
+                         'html.tnet-embedded .titlebar{display:none!important}',
+                         '&#x2600;','&#x263E;','&#x25D0;']:
+              assert marker in s, marker
+          assert 'class="version"' not in s
+          assert '<div class="demo">' not in s
+          assert len(s.encode('utf-8')) < 200000
+          Path('publisher/releases/approved-ui-live-6.31.2.html').write_bytes(s.encode('utf-8'))
+          print('PASS: HTML-only changes; app and monitor engine not modified')
+          PY
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('publisher/releases/approved-ui-live-6.31.2.html').read_text('utf-8')
+          for i,script in enumerate(re.findall(r'<script[^>]*>(.*?)</script>',s,re.S)):
+              Path(f'script-{i}.js').write_text(script,encoding='utf-8')
+          PY
+          for js in script-*.js; do node --check "$js"; done
+      - name: Publish checksum-verified UI feed (no EXE or ZIP)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          html=Path('publisher/releases/approved-ui-live-6.31.2.html')
+          sha=hashlib.sha256(html.read_bytes()).hexdigest()
+          data={'version':'6.31.2',
+                'uiUrl':'https://raw.githubusercontent.com/adesanoyeademola/airtel-data-monitor/main/releases/approved-ui-live-6.31.2.html',
+                'uiSha256':sha}
+          Path('publisher/updates/ui.json').write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
+          print('UI SHA256:',sha)
+          PY
+          cd publisher
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add releases/approved-ui-live-6.31.2.html updates/ui.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish text-only T-Net UI encoding and offline-status repair'
+            git push origin HEAD:main
+          fi
